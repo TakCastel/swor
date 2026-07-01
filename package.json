@@ -1,6 +1,9 @@
 {
   "name": "swor-v2",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "front",
     "back"
@@ -8,6 +11,18 @@
   "scripts": {
     "dev": "npm run dev -w front",
     "dev:front": "npm run dev -w front",
-    "dev:back": "npm run dev -w back"
+    "dev:back": "npm run dev -w back",
+    "build": "npm run build -w front",
+    "lint": "npm run lint -w front",
+    "setup": "npm install && npm run setup:env",
+    "setup:env": "test -f docker/supabase/.env || cp docker/supabase/env.example docker/supabase/.env; test -f .env || cp .env.example .env; test -f front/.env.local || cp front/env.local.example front/.env.local; test -f back/.env.local || cp back/env.local.example back/.env.local",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:supabase:up": "docker compose -f docker/supabase/docker-compose.yml --env-file docker/supabase/.env up -d",
+    "docker:supabase:down": "docker compose -f docker/supabase/docker-compose.yml --env-file docker/supabase/.env down",
+    "docker:prod:up": "docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build",
+    "docker:prod:down": "docker compose -f docker-compose.prod.yml --env-file .env.production down",
+    "docker:prod:logs": "docker compose -f docker-compose.prod.yml --env-file .env.production logs -f"
   }
 }

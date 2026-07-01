@@ -52,6 +52,8 @@ export interface Forum {
   topics_count: number;
   posts_count: number;
   era?: string;
+  image_url?: string;
+  header_image_url?: string;
   required_role?: string;
   sub_forums?: Forum[];
   topics?: Topic[];

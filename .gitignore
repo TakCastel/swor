@@ -36,3 +36,6 @@ next-env.d.ts
 # Docker local volumes (Postgres data, storage)
 docker/supabase/volumes/db/data/
 docker/supabase/volumes/storage/
+
+# TypeScript
+*.tsbuildinfo

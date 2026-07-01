@@ -357,7 +357,7 @@ export default function ForumAdminPage() {
           <SectionHeader 
             title="Administration des Forums" 
             subtitle="Gestion du contenu"
-            font="cinzel"
+            font="outfit"
             description="Gérez l'arborescence, les catégories et les paramètres des forums de la plateforme."
           />
         </div>

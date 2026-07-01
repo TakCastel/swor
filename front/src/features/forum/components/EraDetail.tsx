@@ -52,7 +52,7 @@ export default function EraDetail({ era }: EraDetailProps) {
         <SectionHeader 
           title={displayName} 
           subtitle="Exploration Galactique"
-          font="cinzel"
+          font="outfit"
           description={era.description || "Naviguez à travers les différents secteurs et systèmes de cette ère galactique."}
         />
       </header>

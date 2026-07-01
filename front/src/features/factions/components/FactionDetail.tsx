@@ -7,6 +7,7 @@ import { supabase } from '@/shared/utils/supabase';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
 import { Avatar } from '@/shared/components/ui/Avatar';
 import { Badge } from '@/shared/components/ui/Badge';
+import { Card } from '@/shared/components/ui/Card';
 import { Group, CharacterProfile } from '@/features/profile/types';
 
 interface FactionDetailProps {

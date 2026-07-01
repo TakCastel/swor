@@ -417,7 +417,8 @@ export default function PortalContent() {
           created_at: n.created_at,
           author_name: n.author?.username || 'Inconnu'
         })));
-        setNewsForumId(newsItems[0].forum?.id || 1);
+        const forum = newsItems[0].forum as { id: number } | { id: number }[] | null;
+        setNewsForumId((Array.isArray(forum) ? forum[0]?.id : forum?.id) || 1);
       } else {
         // Fallback: essayer de trouver le forum 'Annonces' même s'il est vide
         const { data: forumData } = await supabase

@@ -311,6 +311,7 @@ export default function DesignSystemPage() {
             <div className="space-y-8">
               <h3 className="text-xs font-black uppercase tracking-[0.4em] text-zinc-500">Messages (Posts)</h3>
               <PostView 
+                id={1}
                 author={{
                   name: "Darth Vader",
                   avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vader",

@@ -1,0 +1,19 @@
+include:
+  - docker/supabase/docker-compose.yml
+
+services:
+  front:
+    container_name: swor-front
+    build:
+      context: .
+      dockerfile: front/Dockerfile.prod
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${ANON_KEY}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - kong
