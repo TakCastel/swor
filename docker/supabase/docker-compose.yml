@@ -1,0 +1,172 @@
+# Docker Compose for Self-Hosted Supabase
+# This is a simplified version of the official Supabase self-hosting setup.
+
+services:
+  db:
+    container_name: supabase-db
+    image: supabase/postgres:15.1.0.147
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+    volumes:
+      - ./volumes/db/data:/var/lib/postgresql/data
+      - ./volumes/db/init:/docker-entrypoint-initdb.d
+    ports:
+      - ${POSTGRES_PORT}:5432
+
+  kong:
+    container_name: supabase-kong
+    image: kong:2.8.1
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+    volumes:
+      - ./kong.yml:/var/lib/kong/kong.yml
+    ports:
+      - ${KONG_PORT}:8000
+      - ${KONG_ADMIN_PORT}:8001
+
+  auth:
+    container_name: supabase-auth
+    image: supabase/gotrue:v2.152.0
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      timeout: 5s
+      interval: 5s
+      retries: 10
+    environment:
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres?sslmode=disable&search_path=auth
+      GOTRUE_API_EXTERNAL_URL: http://localhost:54321/auth/v1
+      API_EXTERNAL_URL: http://localhost:54321/auth/v1
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_OPERATOR_TOKEN: ${OPERATOR_TOKEN}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: ${ENABLE_EMAIL_SIGNUP}
+      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT}
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME}
+      GOTRUE_DB_MAX_POOL_SIZE: ${DB_MAX_POOL_SIZE}
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+
+  rest:
+    container_name: supabase-rest
+    image: postgrest/postgrest:v12.0.2
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:postgres@db:5432/postgres
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+
+  realtime:
+    container_name: supabase-realtime
+    image: supabase/realtime:v2.30.23
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: postgres
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_SSL: "false"
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET}
+      REPLICATION_MODE: RLS
+      REPLICATION_SLOT_NAME: supabase_realtime_replication_slot
+      PUBLICATION_NAME: supabase_realtime_publication
+      SECURE_CHANNELS: "true"
+      RLIMIT_NOFILE: 1048576
+      SECRET_KEY_BASE: ${JWT_SECRET}
+      APP_NAME: swor-v2-realtime
+
+  storage:
+    container_name: supabase-storage
+    image: supabase/storage-api:v0.40.4
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: default
+      REGION: local
+      GLOBAL_S3_BUCKET: screenshots
+    volumes:
+      - ./volumes/storage:/var/lib/storage
+
+  directus:
+    container_name: directus
+    image: directus/directus:10.13.1
+    ports:
+      - "8055:8055"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      KEY: "directus-key-for-star-wars-rp"
+      SECRET: "directus-secret-for-star-wars-rp"
+      DB_CLIENT: "pg"
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      DB_DATABASE: "postgres"
+      DB_USER: "postgres"
+      DB_PASSWORD: "${POSTGRES_PASSWORD}"
+      # Directus needs to access the public schema
+      DB_SCHEMA: "public"
+      # Enable all features
+      ADMIN_EMAIL: "admin@example.com"
+      ADMIN_PASSWORD: "password"
+      # To allow Directus to see Supabase tables
+      DB_METADATA_IGNORE: "false"
+
+  studio:
+    container_name: supabase-studio
+    image: supabase/studio:latest
+    environment:
+      SUPABASE_URL: http://kong:8000
+      API_URL: http://localhost:${KONG_PORT}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - ${STUDIO_PORT}:3000
+

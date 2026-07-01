@@ -1,32 +1,13 @@
 {
-  "name": "star-wars-roleplay-forum",
+  "name": "swor-v2",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "workspaces": [
+    "front",
+    "back"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@tailwindcss/postcss": "latest",
-    "clsx": "latest",
-    "lucide-react": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1",
-    "tailwind-merge": "latest",
-    "tailwindcss": "latest"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "autoprefixer": "latest",
-    "postcss": "latest",
-    "typescript": "~5.8.2"
+    "dev": "npm run dev -w front",
+    "dev:front": "npm run dev -w front",
+    "dev:back": "npm run dev -w back"
   }
 }

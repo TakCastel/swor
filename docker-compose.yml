@@ -1,0 +1,21 @@
+include:
+  - docker/supabase/docker-compose.yml
+
+services:
+  front:
+    container_name: swor-front
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./front:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
+      - SUPABASE_INTERNAL_URL=http://supabase-kong:8000
+    depends_on:
+      - kong
+
