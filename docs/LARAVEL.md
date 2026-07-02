@@ -24,11 +24,14 @@ php artisan key:generate
 
 ## Base de données
 
-Par défaut, `.env.example` pointe vers le Postgres Supabase Docker (`localhost:54322`).
+Par défaut, `.env.example` pointe vers une base **`swor`** dédiée sur le Postgres Docker (port `54322`), **distincte** du schéma Supabase existant sur la base `postgres`.
 
 ```bash
+# Créer la base (via Docker Supabase)
+docker compose -f docker/supabase/docker-compose.yml exec db psql -U postgres -c "CREATE DATABASE swor;"
+
 npm run docker:supabase:up
-php artisan migrate
+php artisan migrate:fresh --seed
 ```
 
 Les migrations Laravel actuelles créent les tables système (users, sessions, cache, jobs). Le schéma métier Swor arrive en #31.
