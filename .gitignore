@@ -39,3 +39,6 @@ docker/supabase/volumes/storage/
 
 # TypeScript
 *.tsbuildinfo
+
+# Claude Code (réglages personnels, non partagés)
+.claude/settings.local.json
