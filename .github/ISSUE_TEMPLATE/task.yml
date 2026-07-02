@@ -1,0 +1,26 @@
+name: Ticket
+description: Tâche technique unitaire, rattachée à une story et/ou un epic (milestone)
+title: "[Task] "
+labels:
+  - "type:task"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Rattache ce ticket à son epic via le champ **Milestone**, et référence la story parente si besoin (`#123`).
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Ce qui doit être fait, en termes techniques
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of Done
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true

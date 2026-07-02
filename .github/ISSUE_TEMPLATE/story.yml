@@ -1,0 +1,35 @@
+name: User Story
+description: Fonctionnalité orientée utilisateur, rattachée à un epic (milestone)
+title: "[Story] "
+labels:
+  - "type:story"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Rattache cette story à son epic via le champ **Milestone** dans la sidebar.
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexte
+      description: En tant que [rôle], je veux [action], afin de [bénéfice]
+      placeholder: "En tant que joueur, je veux ... afin de ..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Critères d'acceptation
+      description: Liste des conditions à remplir pour considérer la story terminée
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / hors périmètre
+      description: Précisions, contraintes techniques, ce qui n'est explicitement pas couvert
+    validations:
+      required: false
