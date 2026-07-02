@@ -1,64 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/shared/utils/supabase';
+import { ApiError, deleteAccount } from '@/shared/utils/api';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { Button } from '@/shared/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/shared/components/ui/Card';
-import { Trash2, AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Loader2, Lock } from 'lucide-react';
 
 export default function DeleteAccountPage() {
   const router = useRouter();
+  const { user, loading: checking } = useAuth();
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
-  const [user, setUser] = useState<any>(null);
   const [confirmText, setConfirmText] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/auth/login');
-      } else {
-        setUser(user);
-      }
-      setChecking(false);
-    };
-    checkUser();
-  }, [router]);
-
-  const handleDeleteAccount = async () => {
-    if (confirmText !== 'SUPPRIMER') return;
-    
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Pour supprimer un compte dans Supabase côté client, 
-      // on utilise généralement une Edge Function car auth.admin est requis.
-      // Mais ici on va simuler ou expliquer que c'est une action critique.
-      // Note: supabase.auth.admin.deleteUser(id) n'est pas dispo côté client sans clé service role.
-      
-      // Alternative: appeler une route d'API qui fait la suppression
-      const response = await fetch('/api/auth/delete-account', {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Erreur lors de la suppression');
-      }
-
-      await supabase.auth.signOut();
-      router.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Action impossible sans configuration serveur appropriée.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (checking) {
     return (
@@ -67,6 +23,33 @@ export default function DeleteAccountPage() {
       </div>
     );
   }
+
+  if (!user) {
+    router.push('/auth/login');
+    return null;
+  }
+
+  const handleDeleteAccount = async () => {
+    if (confirmText !== 'SUPPRIMER' || !password) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await deleteAccount(password);
+      router.push('/');
+      router.refresh();
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.message
+        : 'Erreur lors de la suppression du compte.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 bg-black">
@@ -85,8 +68,18 @@ export default function DeleteAccountPage() {
         <CardContent className="space-y-4">
           <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
             <p className="text-sm text-zinc-400">
-              Pour confirmer la suppression de votre compte <strong>{user?.email}</strong>, veuillez taper <span className="text-white font-mono font-bold">SUPPRIMER</span> ci-dessous :
+              Pour confirmer la suppression de votre compte <strong>{user.email}</strong>, saisissez votre mot de passe puis tapez <span className="text-white font-mono font-bold">SUPPRIMER</span> :
             </p>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mot de passe actuel"
+                className="w-full bg-black/60 border border-red-500/30 rounded-lg py-2 pl-10 pr-2 text-white focus:outline-none focus:border-red-500 transition-colors"
+              />
+            </div>
             <input
               type="text"
               value={confirmText}
@@ -106,7 +99,7 @@ export default function DeleteAccountPage() {
           <Button 
             variant="danger" 
             className="w-full h-12 font-black"
-            disabled={confirmText !== 'SUPPRIMER' || loading}
+            disabled={confirmText !== 'SUPPRIMER' || !password || loading}
             onClick={handleDeleteAccount}
           >
             {loading ? 'Suppression...' : 'Supprimer définitivement mon compte'}
@@ -120,6 +113,3 @@ export default function DeleteAccountPage() {
     </div>
   );
 }
-
-
-

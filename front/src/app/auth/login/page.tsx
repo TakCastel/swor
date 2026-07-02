@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/shared/utils/supabase';
+import { ApiError, loginUser } from '@/shared/utils/api';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -24,18 +24,15 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
+      await loginUser({ email, password });
       showToast('Connexion réussie ! Heureux de vous revoir.', 'success');
       router.push('/');
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue lors de la connexion');
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.message
+        : 'Une erreur est survenue lors de la connexion';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -118,5 +115,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-

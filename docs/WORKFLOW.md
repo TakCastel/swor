@@ -39,7 +39,7 @@ Ouvrir une Pull Request **vers `develop`** en référençant le ticket (`Closes 
 `main` et `develop` sont protégées : pas de push direct, PR obligatoire.
 
 - Au moins une review approuvante requise (dismissée si nouveau commit poussé).
-- La CI (`.github/workflows/ci.yml`, job `front`) doit passer.
+- La CI (`.github/workflows/ci.yml`, jobs `api` et `front`) doit passer.
 - Merge dans `develop`, suppression de la branche `feature/...`.
 
 ## 3. Release

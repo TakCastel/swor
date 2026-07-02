@@ -1,8 +1,10 @@
 # ADR 0001 — Migration vers un monolithe Laravel
 
-**Statut :** Accepté (2026-07-03)  
+**Statut :** Accepté (2026-07-03), partiellement remplacé par [ADR 0002](0002-frontend-api-separes.md)  
 **Date :** 2026-07-03  
 **Issue :** #29
+
+> **Note :** la décision backend Laravel, PostgreSQL, Filament, Reverb et Fortify reste valide. Le frontend joueur **Inertia** est remplacé par **Next.js + API** (voir ADR 0002). Laravel vit dans **`api/`**.
 
 ## Contexte
 
@@ -120,17 +122,16 @@ Deux fichiers SQL coexistent aujourd'hui et **divergent** :
 
 ```
 swor/
-├── app/                    # Laravel (Models, Policies, Controllers)
-├── resources/js/           # Inertia + React (composants portés depuis front/)
-├── database/migrations/    # Schéma Postgres
-├── database/seeders/       # Contenu (forums, atlas…)
+├── api/                    # Laravel (API + Filament) — voir ADR 0002
+├── front/                  # Next.js — front joueur
 ├── docs/
-│   ├── adr/                # Décisions d'architecture
-│   └── data-model/         # Modèle métier documenté
-├── front/                  # (legacy, supprimé en #41)
-├── back/                   # (legacy, supprimé en #41)
-└── docker/                 # Stack simplifiée (app + postgres + redis)
+│   ├── adr/
+│   └── data-model/
+├── back/                   # (legacy Next admin, supprimé en #41)
+└── docker/                 # api + front + postgres + redis
 ```
+
+> **Note :** Laravel est dans **`api/`** ([ADR 0002](0002-frontend-api-separes.md)).
 
 Pendant la transition, `front/` et `back/` restent en place jusqu'à #41.
 
@@ -163,6 +164,7 @@ Le **SSR classique reste possible** via [Inertia SSR](https://inertiajs.com/serv
 
 ## Références
 
+- [ADR 0002 — Frontend et backend séparés](0002-frontend-api-separes.md) — API Laravel + Next.js (remplace Inertia)
 - [WORKFLOW.md](../WORKFLOW.md) — branches et PR
 - [data-model/README.md](../data-model/README.md) — entités et relations
 - Epic GitHub : *EPIC: Migration Laravel* (#29–#41)

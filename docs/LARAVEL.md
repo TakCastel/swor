@@ -1,6 +1,8 @@
-# Swor — démarrage local (Laravel)
+# Swor — démarrage local (API Laravel)
 
-Monolithe Laravel + Inertia + React. Remplace progressivement `front/` et `back/`.
+Backend Laravel dans **`api/`**. Le front joueur est dans **`front/`** (Next.js).
+
+Voir [adr/0002-frontend-api-separes.md](adr/0002-frontend-api-separes.md) pour l’architecture cible.
 
 ## Prérequis
 
@@ -14,72 +16,97 @@ Monolithe Laravel + Inertia + React. Remplace progressivement `front/` et `back/
 npm run setup
 ```
 
-Installe les dépendances PHP et npm, copie `.env.example` vers `.env` si absent.
+Installe les dépendances Composer (`api/`), npm (racine + workspaces) et copie les fichiers `.env` d’exemple.
 
-Générer la clé d'application si besoin :
+Générer la clé d’application si besoin :
 
 ```bash
-php artisan key:generate
+cd api && php artisan key:generate
 ```
 
 ## Base de données
 
-Par défaut, `.env.example` pointe vers une base **`swor`** dédiée sur le Postgres Docker (port `54322`), **distincte** du schéma Supabase existant sur la base `postgres`.
+Par défaut, `api/.env.example` pointe vers une base **`swor`** dédiée sur le Postgres Docker (port `54322`), **distincte** du schéma Supabase existant sur la base `postgres`.
 
 ```bash
 # Créer la base (via Docker Supabase)
 docker compose -f docker/supabase/docker-compose.yml exec db psql -U postgres -c "CREATE DATABASE swor;"
 
 npm run docker:supabase:up
-php artisan migrate:fresh --seed
+cd api && php artisan migrate:fresh --seed
 ```
 
-Les migrations Laravel actuelles créent les tables système (users, sessions, cache, jobs). Le schéma métier Swor arrive en #31.
+## Lancer l’API
 
-## Lancer l'app
-
-Terminal unique (serveur PHP + Vite + queue + logs) :
+Terminal unique (serveur PHP + queue + logs + Vite Inertia legacy) :
 
 ```bash
-composer dev
+npm run dev:api
 ```
 
 Ou séparément :
 
 ```bash
-php artisan serve    # http://localhost:8000
-npm run dev          # Vite HMR
+cd api && php artisan serve    # http://localhost:8000
 ```
 
-Page d'accueil : [http://localhost:8000](http://localhost:8000)
+Endpoints : `http://localhost:8000/api/v1/...`
+
+### Authentification (#32)
+
+- Fortify + Sanctum (session SPA, cookies partagés avec `front/`)
+- Endpoints : `POST /api/v1/auth/register`, `login`, `logout`, `forgot-password`, `reset-password`, `GET /api/v1/auth/user`, `DELETE /api/v1/auth/user`
+- CSRF : `GET /sanctum/csrf-cookie` avant les requêtes mutantes depuis le front
+- Variables `api/.env` : `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, `SESSION_DOMAIN`
+- Front : `NEXT_PUBLIC_API_URL=http://localhost:8000` dans `front/.env.local`
+
+## Lancer le front joueur
+
+Dans un second terminal :
+
+```bash
+npm run dev:front    # front/ sur :3000
+```
+
+Le front consomme l’API Laravel (Sanctum) pour l’authentification (#32). Les autres domaines (forum, profil…) restent sur Supabase jusqu’aux issues suivantes.
+
+## Back-office
+
+Filament arrive en #39 sur `/admin` (même app Laravel dans `api/`).
 
 ## Qualité
 
 ```bash
-./vendor/bin/pint          # Format PHP (Laravel Pint)
-npm run lint               # ESLint (resources/js)
-npm run format:check       # Prettier
-php artisan test           # PHPUnit
+cd api && ./vendor/bin/pint          # Format PHP
+cd api && php artisan test           # PHPUnit / Pest
+npm run lint                         # ESLint (front/)
 ```
 
-## Structure frontend
+## Structure
 
 ```
-resources/js/
-├── pages/          # Pages Inertia (une par route)
-├── components/     # Composants React réutilisables
-│   └── ui/         # Design system (porté depuis front/)
-├── layouts/        # Layouts Inertia
-└── lib/            # Utilitaires (cn, etc.)
+api/
+├── app/
+│   ├── Http/Controllers/Api/
+│   ├── Models/
+│   └── Policies/
+├── routes/
+│   ├── api.php         # JSON pour front/
+│   └── web.php         # Filament, healthcheck
+├── database/
+├── public/
+└── composer.json
+
+front/                  # Next.js — front joueur
 ```
 
-## Legacy
+## Legacy (dans api/)
 
-L'ancien stack Next.js reste disponible pendant la migration :
+- **`api/resources/js/`** — squelette Inertia (#30), provisoire ; retiré en #41
+- **`back/`** — back-office Next.js, remplacé par Filament (#39)
 
 ```bash
-npm run dev:front    # front/ sur :3000
-npm run dev:back     # back/ sur :3001
+npm run dev:back     # back/ sur :3001 (legacy)
 ```
 
-Voir [WORKFLOW.md](WORKFLOW.md) et [adr/0001-migration-laravel.md](adr/0001-migration-laravel.md).
+Voir [WORKFLOW.md](WORKFLOW.md), [adr/0001-migration-laravel.md](adr/0001-migration-laravel.md) et [adr/0002-frontend-api-separes.md](adr/0002-frontend-api-separes.md).

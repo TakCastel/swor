@@ -18,23 +18,26 @@ Site cible : [swor.fr](https://swor.fr)
 
 ## Architecture
 
-Monorepo npm avec workspaces :
+Monorepo avec **deux applications autonomes** ([ADR 0002](docs/adr/0002-frontend-api-separes.md)) :
 
 ```
 swor/
-├── front/          # Application principale (Next.js, port 3000)
-├── back/           # Back-office admin (Next.js, port 3001)
-├── supabase/       # Migrations et seeds SQL
-└── docker/         # Supabase auto-hébergé, compose racine
+├── api/            # Backend Laravel (API JSON + Filament à venir)
+├── front/          # Application joueur (Next.js, port 3000)
+├── back/           # Back-office legacy (Next.js, port 3001 — remplacé par Filament)
+├── supabase/       # Migrations SQL legacy
+└── docker/         # Compose (Supabase, services)
 ```
 
 | Service        | Port  | Description                          |
 |----------------|-------|--------------------------------------|
-| Front          | 3000  | Application utilisateur              |
-| Back-office    | 3001  | Interface d’administration           |
-| Supabase API   | 54321 | Kong (REST, Auth, Realtime, Storage) |
-| Supabase Studio| 54323 | Interface de gestion de la BDD       |
+| API Laravel    | 8000  | Auth, métier, JSON (`/api/v1/`)      |
+| Front          | 3000  | Application utilisateur (Next.js)    |
+| Back-office    | 3001  | Admin legacy (en cours de remplacement)|
+| Supabase API   | 54321 | Kong legacy (migration en cours)     |
 | PostgreSQL     | 54322 | Base de données                      |
+
+Voir [docs/LARAVEL.md](docs/LARAVEL.md) pour le démarrage local API + front.
 
 ## Prérequis
 
@@ -58,7 +61,8 @@ Les fichiers d’exemple :
 
 | Fichier | Destination | Usage |
 |---------|-------------|-------|
-| `.env.example` | `.env` | Docker Compose à la racine |
+| `.env.example` | `.env` | Docker Compose racine (Supabase legacy) |
+| `api/.env.example` | `api/.env` | API Laravel |
 | `docker/supabase/env.example` | `docker/supabase/.env` | Stack Supabase |
 | `front/env.local.example` | `front/.env.local` | Application front |
 | `back/env.local.example` | `back/.env.local` | Back-office |
