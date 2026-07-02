@@ -32,7 +32,8 @@ BEGIN
         CREATE ROLE supabase_admin WITH SUPERUSER CREATEROLE CREATEDB REPLICATION BYPASSRLS;
     END IF;
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'authenticator') THEN
-        CREATE ROLE authenticator NOINHERIT LOGIN PASSWORD 'postgres';
+        -- Le mot de passe est défini par 00z_set_authenticator_password.sh (variable AUTHENTICATOR_PASSWORD)
+        CREATE ROLE authenticator NOINHERIT;
     END IF;
 END
 $$;

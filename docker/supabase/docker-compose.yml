@@ -15,6 +15,7 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
+      AUTHENTICATOR_PASSWORD: ${AUTHENTICATOR_PASSWORD}
     volumes:
       - ./volumes/db/data:/var/lib/postgresql/data
       - ./volumes/db/init:/docker-entrypoint-initdb.d
@@ -81,7 +82,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://authenticator:postgres@db:5432/postgres
+      PGRST_DB_URI: postgres://authenticator:${AUTHENTICATOR_PASSWORD}@db:5432/postgres
       PGRST_DB_SCHEMA: public
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: ${JWT_SECRET}
@@ -132,31 +133,6 @@ services:
       GLOBAL_S3_BUCKET: screenshots
     volumes:
       - ./volumes/storage:/var/lib/storage
-
-  directus:
-    container_name: directus
-    image: directus/directus:10.13.1
-    ports:
-      - "8055:8055"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      KEY: "directus-key-for-star-wars-rp"
-      SECRET: "directus-secret-for-star-wars-rp"
-      DB_CLIENT: "pg"
-      DB_HOST: "db"
-      DB_PORT: "5432"
-      DB_DATABASE: "postgres"
-      DB_USER: "postgres"
-      DB_PASSWORD: "${POSTGRES_PASSWORD}"
-      # Directus needs to access the public schema
-      DB_SCHEMA: "public"
-      # Enable all features
-      ADMIN_EMAIL: "admin@example.com"
-      ADMIN_PASSWORD: "password"
-      # To allow Directus to see Supabase tables
-      DB_METADATA_IGNORE: "false"
 
   studio:
     container_name: supabase-studio
