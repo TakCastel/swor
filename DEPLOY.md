@@ -78,7 +78,7 @@ Services :
 |---------|--------------|------------------|
 | Front Next.js | 3000 (localhost) | Via Nginx → `swor.fr` |
 | Supabase API (Kong) | 54321 | Via Nginx → `api.swor.fr` |
-| Studio / Directus | 54323 / 8055 | Bloquer en prod ou VPN uniquement |
+| Supabase Studio | 54323 | Bloquer en prod ou VPN uniquement |
 | PostgreSQL | 54322 | Localhost / jamais exposé |
 
 ## 5. Nginx (HTTPS)
@@ -109,7 +109,7 @@ sudo ufw allow 443
 sudo ufw enable
 ```
 
-Ne pas ouvrir les ports 54321, 54322, 54323, 8055 publiquement — Nginx fait le proxy.
+Ne pas ouvrir les ports 54321, 54322, 54323 publiquement — Nginx fait le proxy.
 
 ## Dépannage
 

@@ -25,7 +25,7 @@ swor/
 ├── front/          # Application principale (Next.js, port 3000)
 ├── back/           # Back-office admin (Next.js, port 3001)
 ├── supabase/       # Migrations et seeds SQL
-└── docker/         # Supabase auto-hébergé, Directus, compose racine
+└── docker/         # Supabase auto-hébergé, compose racine
 ```
 
 | Service        | Port  | Description                          |
@@ -35,7 +35,6 @@ swor/
 | Supabase API   | 54321 | Kong (REST, Auth, Realtime, Storage) |
 | Supabase Studio| 54323 | Interface de gestion de la BDD       |
 | PostgreSQL     | 54322 | Base de données                      |
-| Directus       | 8055  | CMS / administration des données     |
 
 ## Prérequis
 
@@ -79,7 +78,6 @@ npm run docker:up
 
 - Front : [http://localhost:3000](http://localhost:3000)
 - Supabase Studio : [http://localhost:54323](http://localhost:54323)
-- Directus : [http://localhost:8055](http://localhost:8055) (`admin@example.com` / `password` par défaut)
 
 ### En local (développement)
 
@@ -130,7 +128,6 @@ La simulation IA nécessite `OPENAI_API_KEY` ou `GEMINI_API_KEY` dans `front/.en
 
 **Backend & données**
 - Supabase (PostgreSQL, Auth, Realtime, Storage)
-- Directus (CMS)
 - Schéma : personnages, forums hiérarchiques, factions, inventaire, économie, vaisseaux
 
 ## Structure du front
