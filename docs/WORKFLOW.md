@@ -36,20 +36,21 @@ Ouvrir une Pull Request **vers `develop`** en référençant le ticket (`Closes 
 
 ## 2. Revue et fusion
 
-- Au moins une review avant merge (dès qu'il y a plusieurs contributeurs actifs).
-- La CI (`.github/workflows/ci.yml`) doit passer.
+`main` et `develop` sont protégées : pas de push direct, PR obligatoire.
+
+- Au moins une review approuvante requise (dismissée si nouveau commit poussé).
+- La CI (`.github/workflows/ci.yml`, job `front`) doit passer.
 - Merge dans `develop`, suppression de la branche `feature/...`.
 
 ## 3. Release
 
-Quand `develop` est stable et prêt à partir en prod :
+Quand `develop` est stable et prêt à partir en prod, ouvrir une PR `develop` → `main` (obligatoire, `main` est protégée). Une fois mergée :
 
 ```bash
 git checkout main
 git pull
-git merge --no-ff develop
 git tag vX.Y.Z
-git push origin main --tags
+git push origin --tags
 ```
 
 Le déploiement suit ensuite [`DEPLOY.md`](../DEPLOY.md).
