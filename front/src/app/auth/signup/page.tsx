@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ApiError, registerUser } from '@/shared/utils/api';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -12,6 +13,7 @@ import { Mail, Lock, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -40,6 +42,9 @@ export default function SignupPage() {
         password,
         password_confirmation: confirmPassword,
       });
+
+      // La session est ouverte dès l'inscription : propager dans toute l'app
+      await refresh();
 
       if (response.user.email_verified_at) {
         showToast('Bienvenue ! Votre compte a été créé avec succès.', 'success');
