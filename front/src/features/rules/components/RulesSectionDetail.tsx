@@ -1,7 +1,7 @@
 import { RuleSection } from '../types';
 import { Card, CardTitle } from '@/shared/components/ui/Card';
-import { Badge } from '@/shared/components/ui/Badge';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
+import { WikiArticleHeader } from '@/shared/components/wiki/WikiArticle';
 import { ShieldAlert } from 'lucide-react';
 
 interface RulesSectionDetailProps {
@@ -10,19 +10,12 @@ interface RulesSectionDetailProps {
 
 export default function RulesSectionDetail({ section }: RulesSectionDetailProps) {
   return (
-    <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <header className="space-y-6">
-        <div className="flex items-center gap-3 bg-yellow-500/5 w-fit px-4 py-1.5 rounded-full border border-yellow-500/10">
-          <Badge variant="yellow" className="bg-transparent border-0 p-0 text-[10px] font-black tracking-[0.2em]">DIRECTIVES_PROTOCOL</Badge>
-        </div>
-        <h2 className="text-5xl font-black font-outfit text-white leading-tight uppercase tracking-tighter">{section.title}</h2>
-        <div className="relative pl-10">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-white/10 rounded-full" />
-          <p className="text-xl text-zinc-500 max-w-3xl leading-relaxed italic font-medium">
-            {section.description}
-          </p>
-        </div>
-      </header>
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <WikiArticleHeader
+        badge="Directives"
+        title={section.title}
+        excerpt={section.description}
+      />
 
       <div className="space-y-6">
         <CategoryHeader title="Protocoles en Vigueur" icon={ShieldAlert} />

@@ -4,19 +4,16 @@ import { ChevronRight, ShieldCheck, BookOpen } from 'lucide-react';
 import { RULES_DATA } from '../data/rules-data';
 import { Card, CardTitle } from '@/shared/components/ui/Card';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
+import { WikiArticleHeader } from '@/shared/components/wiki/WikiArticle';
 
 export default function RulesOverview() {
   return (
-    <div className="space-y-16">
-      <header className="space-y-6">
-        <h2 className="text-5xl font-black font-outfit text-white uppercase tracking-tighter">Code Galactique</h2>
-        <div className="relative">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-500 rounded-full" />
-          <p className="text-xl text-zinc-400 max-w-2xl leading-relaxed pl-8 italic">
-            Bienvenue sur le règlement officiel de Swor. Pour assurer une expérience de jeu de qualité et une ambiance saine, nous vous demandons de lire attentivement chaque section.
-          </p>
-        </div>
-      </header>
+    <div className="space-y-12">
+      <WikiArticleHeader
+        badge="Code galactique"
+        title="Règlement officiel"
+        excerpt="Pour assurer une expérience de jeu de qualité et une ambiance saine, lisez attentivement chaque section avant de jouer."
+      />
 
       <div className="space-y-8">
         <CategoryHeader title="Sections du Règlement" icon={BookOpen} />
