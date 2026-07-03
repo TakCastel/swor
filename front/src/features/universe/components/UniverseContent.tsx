@@ -5,20 +5,13 @@ import {
   BookOpen,
   Globe,
   Info,
-  Rocket,
   Shield,
   Sparkles,
   Swords,
 } from 'lucide-react';
 import WikiShell, { type WikiNavCategory } from '@/shared/components/wiki/WikiShell';
-import {
-  WikiArticleHeader,
-  WikiBreadcrumbs,
-  WikiMarkdown,
-} from '@/shared/components/wiki/WikiArticle';
+import { WikiArticleHeader, WikiMarkdown } from '@/shared/components/wiki/WikiArticle';
 import { UNIVERSE_WIKI } from '../data/universe-wiki';
-import { Badge } from '@/shared/components/ui/Badge';
-import { Card } from '@/shared/components/ui/Card';
 
 const categoryIcons: Record<string, typeof BookOpen> = {
   server: Info,
@@ -93,7 +86,7 @@ export default function UniverseContent() {
     }));
   }, [filteredWiki, selectedArticleId]);
 
-  const { category, subCategory, article } = findArticleContext(selectedArticleId);
+  const { article } = findArticleContext(selectedArticleId);
 
   return (
     <WikiShell
@@ -105,57 +98,13 @@ export default function UniverseContent() {
       footnoteLabel="Archives"
       footnote={`"L'histoire est écrite par ceux qui survivent à l'hyperespace."`}
     >
-      <div className="space-y-10">
-        <WikiBreadcrumbs
-          segments={['Univers', category.title, subCategory.title, article.title]}
+      <div className="space-y-8">
+        <WikiArticleHeader
+          badge={article.category}
+          title={article.title}
+          excerpt={article.excerpt}
         />
-
-        <div className="flex flex-col xl:flex-row gap-12">
-          <div className="flex-1 space-y-10 min-w-0">
-            <WikiArticleHeader
-              badge={article.category}
-              title={article.title}
-              excerpt={article.excerpt}
-            />
-            <WikiMarkdown>{article.content}</WikiMarkdown>
-          </div>
-
-          {Object.keys(article.metadata).length > 0 && (
-            <aside className="w-full xl:w-80 shrink-0">
-              <Card className="sticky top-32 overflow-hidden border-white/10">
-                <div className="aspect-video bg-zinc-900 flex items-center justify-center border-b border-white/5">
-                  <Rocket className="w-12 h-12 text-yellow-500/20" />
-                </div>
-                <dl className="p-8 space-y-6">
-                  {Object.entries(article.metadata).map(([key, value]) => (
-                    <div key={key} className="space-y-2 border-b border-white/5 pb-4 last:border-0 last:pb-0">
-                      <dt className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.25em]">
-                        {key}
-                      </dt>
-                      <dd className="text-sm text-zinc-200 font-medium">
-                        {Array.isArray(value) ? (
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {value.map((entry) => (
-                              <Badge
-                                key={entry}
-                                variant="outline"
-                                className="text-[10px] uppercase tracking-widest"
-                              >
-                                {entry}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          value
-                        )}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </Card>
-            </aside>
-          )}
-        </div>
+        <WikiMarkdown>{article.content}</WikiMarkdown>
       </div>
     </WikiShell>
   );

@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { usePathname } from 'next/navigation';
 import { Book, Info, Shield, UserPlus, Wallet } from 'lucide-react';
 import WikiShell, { type WikiNavCategory } from '@/shared/components/wiki/WikiShell';

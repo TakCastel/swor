@@ -74,36 +74,34 @@ export default function WikiShell({
   };
 
   return (
-    <div className="py-12">
+    <div className="py-8">
       {/* Header mobile */}
-      <div className="md:hidden flex items-center justify-between mb-8 px-4 py-3 rounded-2xl bg-zinc-900/40 border border-white/5">
-        <h1 className="text-lg font-bold font-outfit text-white">{title}</h1>
+      <div className="md:hidden flex items-center justify-between mb-8 px-2 py-3 rounded-2xl bg-zinc-900/40 border border-white/5">
+        <h1 className="text-xl font-bold font-outfit text-white">{title}</h1>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-zinc-400" aria-label="Menu">
           {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-12">
+      <div className="flex flex-col md:flex-row gap-8 md:gap-10">
         {/* Sidebar */}
-        <aside className={cn('md:w-72 space-y-8 shrink-0 md:block', isSidebarOpen ? 'block' : 'hidden')}>
-          <div className="space-y-4">
-            <h1 className="text-3xl font-bold font-outfit text-white px-4">{title}</h1>
-            <p className="text-zinc-500 text-sm px-4">{subtitle}</p>
+        <aside className={cn('md:w-72 space-y-6 shrink-0 md:block', isSidebarOpen ? 'block' : 'hidden')}>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold font-outfit text-white">{title}</h1>
+            <p className="text-zinc-500 text-sm">{subtitle}</p>
           </div>
 
           {onSearchChange && (
-            <div className="px-2">
-              <Input
-                icon={Search}
-                placeholder="Rechercher un article…"
-                value={searchValue ?? ''}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="bg-zinc-900/50"
-              />
-            </div>
+            <Input
+              icon={Search}
+              placeholder="Rechercher un article…"
+              value={searchValue ?? ''}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="bg-zinc-900/50"
+            />
           )}
 
-          <nav className="space-y-1">
+          <nav className="space-y-1 max-h-[55vh] overflow-y-auto pr-1 custom-scrollbar">
             {categories.map((category) => {
               const Icon = category.icon;
 
@@ -150,7 +148,7 @@ export default function WikiShell({
                       {category.groups.map(group => (
                         <div key={group.id} className="space-y-0.5">
                           {group.title && (
-                            <p className="px-3 py-1 text-[9px] font-black text-zinc-700 uppercase tracking-[0.25em]">
+                            <p className="px-3 py-1.5 text-[10px] font-black text-zinc-600 uppercase tracking-[0.25em]">
                               {group.title}
                             </p>
                           )}
