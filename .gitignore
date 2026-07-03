@@ -42,3 +42,18 @@ docker/supabase/volumes/storage/
 
 # Claude Code (réglages personnels, non partagés)
 .claude/settings.local.json
+
+# Laravel
+/vendor/
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/database/database.sqlite
+/bootstrap/cache/*.php
+.phpunit.result.cache
+/auth.json
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
