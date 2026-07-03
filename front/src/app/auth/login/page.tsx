@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ApiError, loginUser } from '@/shared/utils/api';
+import { useAuth } from '@/shared/hooks/useAuth';
+import { useActiveCharacter } from '@/shared/contexts/CharacterContext';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -12,6 +14,8 @@ import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refresh } = useAuth();
+  const { refreshActiveCharacter } = useActiveCharacter();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +29,8 @@ export default function LoginPage() {
 
     try {
       await loginUser({ email, password });
+      // Propager la session dans toute l'app (Header, personnage actif…)
+      await Promise.all([refresh(), refreshActiveCharacter()]);
       showToast('Connexion réussie ! Heureux de vous revoir.', 'success');
       router.push('/');
       router.refresh();
