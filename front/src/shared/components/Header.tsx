@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { User, LogIn, LogOut, Shield, Settings, Bell, Search, Menu } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
-import { supabase } from '@/shared/utils/supabase';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { Button } from '@/shared/components/ui/Button';
 import { useActiveCharacter } from '@/shared/contexts/CharacterContext';
 import { Badge } from '@/shared/components/ui/Badge';
@@ -21,28 +21,12 @@ const navLinks = [
 
 export default function Header() {
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
+  const { user, loading: loadingAuth, logout } = useAuth();
   const { activeCharacter, loading: loadingChar } = useActiveCharacter();
 
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoadingAuth(false);
-    };
-
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await logout();
+    window.location.href = '/';
   };
 
   return (

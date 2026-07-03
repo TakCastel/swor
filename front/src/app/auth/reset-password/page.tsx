@@ -1,15 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/shared/utils/supabase';
+import React, { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ApiError, resetPassword } from '@/shared/utils/api';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/Card';
 import { Lock, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token') ?? '';
+  const email = searchParams.get('email') ?? '';
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,6 +25,12 @@ export default function ResetPasswordPage() {
     setLoading(true);
     setError(null);
 
+    if (!token || !email) {
+      setError('Lien de réinitialisation invalide ou expiré.');
+      setLoading(false);
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Les mots de passe ne correspondent pas');
       setLoading(false);
@@ -28,18 +38,22 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
+      await resetPassword({
+        token,
+        email,
+        password,
+        password_confirmation: confirmPassword,
       });
-
-      if (error) throw error;
 
       setSuccess(true);
       setTimeout(() => {
         router.push('/auth/login');
       }, 3000);
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue');
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.message
+        : 'Une erreur est survenue';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -121,5 +135,10 @@ export default function ResetPasswordPage() {
   );
 }
 
-
-
+export default function ResetPasswordPage() {
+  return (
+    <Suspense>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}

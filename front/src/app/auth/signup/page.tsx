@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/shared/utils/supabase';
+import { ApiError, registerUser } from '@/shared/utils/api';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -33,21 +33,15 @@ export default function SignupPage() {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const response = await registerUser({
+        name: username,
+        username,
         email,
         password,
-        options: {
-          data: {
-            username: username,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+        password_confirmation: confirmPassword,
       });
 
-      if (error) throw error;
-
-      if (data.session) {
-        // Utilisateur auto-confirmé et connecté
+      if (response.user.email_verified_at) {
         showToast('Bienvenue ! Votre compte a été créé avec succès.', 'success');
         router.push('/');
         router.refresh();
@@ -55,8 +49,11 @@ export default function SignupPage() {
       }
 
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || "Une erreur est survenue lors de l'inscription");
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.message
+        : "Une erreur est survenue lors de l'inscription";
+      setError(message);
     } finally {
       setLoading(false);
     }

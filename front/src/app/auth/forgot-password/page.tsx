@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/shared/utils/supabase';
+import { ApiError, requestPasswordReset } from '@/shared/utils/api';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/shared/components/ui/Card';
@@ -20,15 +20,13 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
-
-      if (error) throw error;
-
+      await requestPasswordReset(email);
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue');
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.message
+        : 'Une erreur est survenue';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -109,4 +107,3 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
-
