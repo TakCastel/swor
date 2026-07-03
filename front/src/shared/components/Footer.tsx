@@ -7,7 +7,7 @@ import {
   Activity, Info, Gift, BarChart3, Clock, Signal, 
   UserPlus
 } from 'lucide-react';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, apiMutate } from '@/shared/utils/api';
 import { cn } from '@/shared/utils/cn';
 import { Avatar } from '@/shared/components/ui/Avatar';
 import { Tooltip } from '@/shared/components/ui/Tooltip';
@@ -36,25 +36,15 @@ export default function Footer() {
   }, []);
 
   async function updateLastSeen() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-        .from('profiles')
-        .update({ last_seen: new Date().toISOString() })
-        .eq('id', user.id);
-    }
+    // Silencieux si l'utilisateur n'est pas connecté (401)
+    await apiMutate('/me/heartbeat', 'POST').catch(() => {});
   }
 
   async function fetchStats() {
     try {
-      const { data, error } = await supabase.rpc('get_global_stats');
-      if (error) throw error;
-      setStats(data);
+      setStats(await apiFetch<any>('/stats'));
     } catch (err: unknown) {
-      const e = err as { message?: string; code?: string; details?: string };
-      console.error('Error fetching stats:', e.message || err);
-      if (e.code) console.error('CODE:', e.code);
-      if (e.details) console.error('DETAILS:', e.details);
+      console.error('Error fetching stats:', err);
     } finally {
       setLoading(false);
     }
@@ -62,42 +52,17 @@ export default function Footer() {
 
   async function fetchOnlineUsers() {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          username,
-          role,
-          active_character:characters!profiles_active_character_id_fkey (
-            main_group:groups (
-              color
-            )
-          )
-        `)
-        .gt('last_seen', new Date(Date.now() - 15 * 60000).toISOString())
-        .limit(50);
-      
-      if (error) throw error;
-      setOnlineUsers(data || []);
+      setOnlineUsers(await apiFetch<any[]>('/online-users'));
     } catch (err: unknown) {
-      const e = err as { message?: string; code?: string };
-      console.error('Error fetching online users:', e.message || err);
-      if (e.code) console.error('CODE:', e.code);
+      console.error('Error fetching online users:', err);
     }
   }
 
   async function fetchGroups() {
     try {
-      const { data, error } = await supabase
-        .from('groups')
-        .select('*')
-        .order('name');
-      if (error) throw error;
-      setGroups(data || []);
+      setGroups(await apiFetch<any[]>('/groups'));
     } catch (err: unknown) {
-      const e = err as { message?: string; code?: string };
-      console.error('Error fetching groups:', e.message || err);
-      if (e.code) console.error('CODE:', e.code);
+      console.error('Error fetching groups:', err);
     }
   }
 

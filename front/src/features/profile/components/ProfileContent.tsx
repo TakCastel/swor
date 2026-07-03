@@ -10,7 +10,7 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { Avatar } from '@/shared/components/ui/Avatar';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
 import { cn } from '@/shared/utils/cn';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, fetchCurrentUser, logoutUser } from '@/shared/utils/api';
 import { useActiveCharacter } from '@/shared/contexts/CharacterContext';
 
 // Système de grades forum (HRP)
@@ -43,11 +43,10 @@ export default function ProfileContent({ userId }: ProfileContentProps) {
     async function init() {
       setLoading(true);
       try {
-        const { data: authData } = await supabase.auth.getUser();
-        const authUser = authData?.user;
-        
+        const authUser = await fetchCurrentUser();
+
         if (isMounted) setCurrentUser(authUser || null);
-        
+
         const targetId = userId || authUser?.id;
         if (!targetId) {
           if (isMounted) setLoading(false);
@@ -55,17 +54,15 @@ export default function ProfileContent({ userId }: ProfileContentProps) {
         }
 
         const [profileRes, charsRes] = await Promise.all([
-          supabase.from('profiles').select('*').eq('id', targetId).maybeSingle(),
-          supabase.from('characters').select('*, main_group:groups(*)').eq('user_id', targetId)
+          apiFetch<any>(`/profiles/${targetId}`).catch(() => null),
+          apiFetch<any[]>(`/profiles/${targetId}/characters`).catch(() => []),
         ]);
 
         if (isMounted) {
-          if (profileRes.data) {
-            setProfileData(profileRes.data);
+          if (profileRes) {
+            setProfileData(profileRes);
           }
-          if (charsRes.data) {
-            setCharacters(charsRes.data);
-          }
+          setCharacters(charsRes || []);
         }
       } catch (err) {
         console.error("Error in ProfileContent:", err);
@@ -83,7 +80,7 @@ export default function ProfileContent({ userId }: ProfileContentProps) {
   const isOwnProfile = !userId || userId === currentUser?.id;
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await logoutUser();
     router.push('/');
     router.refresh();
   };

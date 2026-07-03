@@ -1,26 +1,23 @@
 {
-  "name": "swor-v2",
+  "name": "swor",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=20"
   },
   "workspaces": [
-    "front",
-    "back"
+    "front"
   ],
   "scripts": {
-    "dev": "npm run dev -w front",
+    "dev:api": "composer dev -d api",
     "dev:front": "npm run dev -w front",
-    "dev:back": "npm run dev -w back",
-    "build": "npm run build -w front",
     "lint": "npm run lint -w front",
-    "setup": "npm install && npm run setup:env",
-    "setup:env": "test -f docker/supabase/.env || cp docker/supabase/env.example docker/supabase/.env; test -f .env || cp .env.example .env; test -f front/.env.local || cp front/env.local.example front/.env.local; test -f back/.env.local || cp back/env.local.example back/.env.local",
+    "test:api": "cd api && php artisan test",
+    "setup": "composer install -d api && npm install && npm run setup:env",
+    "setup:env": "test -f .env || cp .env.example .env; test -f api/.env || cp api/.env.example api/.env; test -f front/.env.local || cp front/env.local.example front/.env.local",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
-    "docker:supabase:up": "docker compose -f docker/supabase/docker-compose.yml --env-file docker/supabase/.env up -d",
-    "docker:supabase:down": "docker compose -f docker/supabase/docker-compose.yml --env-file docker/supabase/.env down",
     "docker:prod:up": "docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build",
     "docker:prod:down": "docker compose -f docker-compose.prod.yml --env-file .env.production down",
     "docker:prod:logs": "docker compose -f docker-compose.prod.yml --env-file .env.production logs -f"

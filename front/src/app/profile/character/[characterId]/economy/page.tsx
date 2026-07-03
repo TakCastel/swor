@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, apiMutate } from '@/shared/utils/api';
 import { Card, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/Card';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Wallet, TrendingUp, TrendingDown, Clock, ArrowUpRight, ArrowDownLeft, Loader2, ShieldCheck, Save, Edit2 } from 'lucide-react';
@@ -32,32 +32,21 @@ export default function EconomyPage() {
   async function fetchData() {
     try {
       // 1. Get User Role
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        setUserRole(profile?.role || 'user');
-      }
+      const me = await apiFetch<{ role?: string }>('/me').catch(() => null);
+      setUserRole(me?.role || 'user');
 
-      // 2. Fetch current credits & monthly flows
-      const { data: charData } = await supabase
-        .from('characters')
-        .select('credits, monthly_income, monthly_expenses')
-        .eq('id', characterId)
-        .single();
-      
+      // 2. Fetch credits, monthly flows & history
+      const economy = await apiFetch<any>(`/characters/${characterId}/economy`);
+
+      const charData = {
+        credits: economy.credits,
+        monthly_income: economy.monthly_income,
+        monthly_expenses: economy.monthly_expenses,
+      };
       setCharacter(charData);
-      setEditIncome(charData?.monthly_income || 0);
-      setEditExpenses(charData?.monthly_expenses || 0);
-
-      // 3. Fetch history
-      const { data, error } = await supabase
-        .from('economy_history')
-        .select('*')
-        .eq('character_id', characterId)
-        .order('date', { ascending: false });
-
-      if (error) throw error;
-      setHistory(data || []);
+      setEditIncome(charData.monthly_income || 0);
+      setEditExpenses(charData.monthly_expenses || 0);
+      setHistory(economy.history || []);
     } catch (err) {
       console.error('Erreur économie:', err);
     } finally {
@@ -68,15 +57,10 @@ export default function EconomyPage() {
   async function handleMJUpdate() {
     setUpdating(true);
     try {
-      const { error } = await supabase
-        .from('characters')
-        .update({
-          monthly_income: editIncome,
-          monthly_expenses: editExpenses
-        })
-        .eq('id', characterId);
-
-      if (error) throw error;
+      await apiMutate(`/characters/${characterId}`, 'PATCH', {
+        monthly_income: editIncome,
+        monthly_expenses: editExpenses
+      });
       setCharacter({ ...character, monthly_income: editIncome, monthly_expenses: editExpenses });
       setIsEditing(false);
     } catch (err) {

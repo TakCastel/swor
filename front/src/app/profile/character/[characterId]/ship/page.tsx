@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch } from '@/shared/utils/api';
 import { Card, CardTitle } from '@/shared/components/ui/Card';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Rocket, Zap, Shield, Target, Cpu, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
@@ -22,26 +22,12 @@ export default function ShipPage() {
 
   async function fetchShip() {
     try {
-      // 1. Fetch ship
-      const { data: shipData, error: shipError } = await supabase
-        .from('ships')
-        .select('*')
-        .eq('character_id', characterId)
-        .single();
-      
-      if (shipError && shipError.code !== 'PGRST116') throw shipError; // PGRST116 means no row found
+      const { ship: shipData } = await apiFetch<{ ship: any | null }>(
+        `/characters/${characterId}/ship`
+      );
+
       setShip(shipData);
-
-      // 2. Fetch modules if ship exists
-      if (shipData) {
-        const { data: moduleData, error: moduleError } = await supabase
-          .from('ship_modules')
-          .select('*')
-          .eq('ship_id', shipData.id);
-
-        if (moduleError) throw moduleError;
-        setModules(moduleData || []);
-      }
+      setModules(shipData?.modules || []);
     } catch (err) {
       console.error('Erreur vaisseau:', err);
     } finally {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch } from '@/shared/utils/api';
 import { Card, CardTitle, CardDescription } from '@/shared/components/ui/Card';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Briefcase, Shield, Zap, Search, Filter, Loader2, Award } from 'lucide-react';
@@ -23,26 +23,12 @@ export default function InventoryPage() {
 
   async function fetchInventory() {
     try {
-      // 1. Fetch character starting item
-      const { data: charData } = await supabase
-        .from('characters')
-        .select('starting_item')
-        .eq('id', characterId)
-        .single();
-      
-      setStartingItem(charData?.starting_item);
+      const data = await apiFetch<{ starting_item: string | null; items: any[] }>(
+        `/characters/${characterId}/inventory`
+      );
 
-      // 2. Fetch inventory items
-      const { data, error } = await supabase
-        .from('character_inventory')
-        .select(`
-          *,
-          item:items_catalog(*)
-        `)
-        .eq('character_id', characterId);
-
-      if (error) throw error;
-      setInventory(data || []);
+      setStartingItem(data.starting_item);
+      setInventory(data.items || []);
     } catch (err) {
       console.error('Erreur inventaire:', err);
     } finally {

@@ -1,21 +1,23 @@
-include:
-  - docker/supabase/docker-compose.yml
-
+# Développement : uniquement la base Postgres.
+# L'API (php artisan serve) et le front (next dev) tournent en local.
 services:
-  front:
-    container_name: swor-front
-    build:
-      context: ./front
-      dockerfile: Dockerfile.dev
+  db:
+    image: postgres:16-alpine
+    container_name: swor-db
+    restart: unless-stopped
     ports:
-      - "3000:3000"
-    volumes:
-      - ./front:/app
-      - /app/node_modules
+      - "${POSTGRES_PORT:-54322}:5432"
     environment:
-      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
-      - SUPABASE_INTERNAL_URL=http://supabase-kong:8000
-    depends_on:
-      - kong
+      POSTGRES_DB: swor
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - swor-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
+volumes:
+  swor-db-data:

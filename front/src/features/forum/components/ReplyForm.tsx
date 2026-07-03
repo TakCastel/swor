@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { supabase } from '@/shared/utils/supabase';
+import { apiMutate } from '@/shared/utils/api';
 import { Button } from '@/shared/components/ui/Button';
 import { Card } from '@/shared/components/ui/Card';
 import { Textarea } from '@/shared/components/ui/Textarea';
@@ -26,25 +26,10 @@ export default function ReplyForm({ topicId, isRP, onSuccess, onCancel }: ReplyF
     
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non connecté');
-
-      const { error } = await supabase
-        .from('posts')
-        .insert({
-          topic_id: topicId,
-          author_id: user.id,
-          character_id: isRP ? activeCharacter?.id : null,
-          content: content.trim()
-        });
-
-      if (error) throw error;
-
-      // Mettre à jour la date de mise à jour du sujet
-      await supabase
-        .from('topics')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', topicId);
+      await apiMutate(`/topics/${topicId}/posts`, 'POST', {
+        content: content.trim(),
+        character_id: isRP ? activeCharacter?.id : null,
+      });
 
       setContent('');
       onSuccess();

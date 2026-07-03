@@ -1,12 +1,16 @@
 # Swor — déploiement VPS (Docker)
 
-Guide pour remplacer l’ancienne app Laravel sur [swor.fr](https://swor.fr) par le stack Next.js + Supabase.
+Stack production : front Next.js + API Laravel + PostgreSQL, derrière Nginx.
+
+> ⚠️ La stack Docker de production (`api/Dockerfile`, `docker-compose.prod.yml`)
+> a été réécrite lors de la migration Laravel et n'a pas encore été validée sur
+> le VPS — à tester au prochain déploiement.
 
 ## Prérequis serveur
 
 - Ubuntu 22.04+ (ou équivalent)
 - Docker et Docker Compose v2
-- Nginx (ou Caddy) pour le reverse proxy HTTPS
+- Nginx pour le reverse proxy HTTPS
 - Nom de domaine pointant vers le VPS (`swor.fr`, `api.swor.fr`)
 
 ## 1. Préparer le serveur
@@ -29,41 +33,29 @@ Depuis votre machine locale :
 ./scripts/deploy.sh user@votre-vps /opt/swor
 ```
 
-Ou manuellement :
-
-```bash
-rsync -avz --delete \
-  --exclude node_modules \
-  --exclude .next \
-  --exclude .git \
-  --exclude docker/supabase/volumes/db/data \
-  --exclude docker/supabase/volumes/storage \
-  ./ user@votre-vps:/opt/swor/
-```
-
-## 3. Configurer l’environnement
+## 3. Configurer l'environnement
 
 Sur le VPS :
 
 ```bash
 cd /opt/swor
 cp .env.production.example .env.production
-cp docker/supabase/env.example docker/supabase/.env
 ```
 
-Éditez `.env.production` et `docker/supabase/.env` :
+Éditez `.env.production` :
 
 | Variable | Exemple | Rôle |
 |----------|---------|------|
-| `SITE_URL` | `https://swor.fr` | URL du front (auth Supabase) |
-| `PUBLIC_SUPABASE_URL` | `https://api.swor.fr` | URL API exposée au navigateur |
-| `JWT_SECRET` | 32+ caractères | Secret JWT Supabase |
-| `ANON_KEY` / `SERVICE_ROLE_KEY` | JWT signés | Clés API (identiques dans les deux fichiers) |
+| `SITE_URL` | `https://swor.fr` | URL publique du front |
+| `API_URL` | `https://api.swor.fr` | URL publique de l'API (injectée au build du front) |
+| `APP_KEY` | `base64:…` | Clé Laravel (`php artisan key:generate --show`) |
+| `SANCTUM_STATEFUL_DOMAINS` | `swor.fr,www.swor.fr` | Domaines autorisés pour la session SPA |
+| `SESSION_DOMAIN` | `.swor.fr` | Portée du cookie de session |
 | `POSTGRES_PASSWORD` | mot de passe fort | Base de données |
+| `SMTP_*` | — | Emails transactionnels |
 
-Générez des clés JWT cohérentes avec votre `JWT_SECRET` (ou réutilisez celles du dev en changeant le secret).
-
-> **Important :** `PUBLIC_SUPABASE_URL` est injectée au **build** du front. Après modification, reconstruisez : `docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build`.
+> **Important :** `API_URL` est injectée au **build** du front. Après
+> modification, reconstruisez : `npm run docker:prod:up`.
 
 ## 4. Lancer en production
 
@@ -72,14 +64,13 @@ cd /opt/swor
 npm run docker:prod:up
 ```
 
-Services :
+Les migrations Laravel s'exécutent automatiquement au démarrage du conteneur API.
 
 | Service | Port interne | Accès recommandé |
 |---------|--------------|------------------|
-| Front Next.js | 3000 (localhost) | Via Nginx → `swor.fr` |
-| Supabase API (Kong) | 54321 | Via Nginx → `api.swor.fr` |
-| Supabase Studio | 54323 | Bloquer en prod ou VPN uniquement |
-| PostgreSQL | 54322 | Localhost / jamais exposé |
+| Front Next.js | 127.0.0.1:3000 | Via Nginx → `swor.fr` |
+| API Laravel | 127.0.0.1:8080 | Via Nginx → `api.swor.fr` |
+| PostgreSQL | interne Docker | Jamais exposé |
 
 ## 5. Nginx (HTTPS)
 
@@ -109,19 +100,17 @@ sudo ufw allow 443
 sudo ufw enable
 ```
 
-Ne pas ouvrir les ports 54321, 54322, 54323 publiquement — Nginx fait le proxy.
+Ne pas ouvrir les ports 3000 et 8080 publiquement — Nginx fait le proxy.
 
 ## Dépannage
 
 ```bash
 # Logs
-docker compose -f docker-compose.prod.yml --env-file .env.production logs -f front
+docker compose -f docker-compose.prod.yml --env-file .env.production logs -f api
 
 # Rebuild complet
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build --force-recreate
 
-# Reset BDD (destructif)
-docker compose -f docker-compose.prod.yml --env-file .env.production down
-rm -rf docker/supabase/volumes/db/data
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+# Console Laravel dans le conteneur
+docker exec -it swor-api php artisan tinker
 ```

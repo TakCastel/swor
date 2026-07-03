@@ -33,12 +33,24 @@ next-env.d.ts
 .env.local
 .env*.local
 
-# Docker local volumes (Postgres data, storage)
-docker/supabase/volumes/db/data/
-docker/supabase/volumes/storage/
-
 # TypeScript
 *.tsbuildinfo
 
 # Claude Code (réglages personnels, non partagés)
 .claude/settings.local.json
+
+# Laravel (api/)
+api/vendor/
+api/public/build
+api/public/hot
+api/public/storage
+api/storage/*.key
+api/database/database.sqlite
+api/bootstrap/cache/*.php
+api/.env
+.phpunit.result.cache
+/auth.json
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log

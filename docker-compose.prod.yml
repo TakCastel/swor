@@ -1,19 +1,72 @@
-include:
-  - docker/supabase/docker-compose.yml
-
+# Production : front Next.js + API Laravel + Postgres.
+# docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: swor-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-swor}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requis}
+    volumes:
+      - swor-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    container_name: swor-api
+    build:
+      context: ./api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY requis}
+      APP_URL: ${API_URL:-https://api.swor.fr}
+      FRONTEND_URL: ${SITE_URL:-https://swor.fr}
+      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-swor.fr,www.swor.fr}
+      SESSION_DOMAIN: ${SESSION_DOMAIN:-.swor.fr}
+      SESSION_SECURE_COOKIE: "true"
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-swor}
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      MAIL_MAILER: smtp
+      MAIL_HOST: ${SMTP_HOST:-}
+      MAIL_PORT: ${SMTP_PORT:-587}
+      MAIL_USERNAME: ${SMTP_USER:-}
+      MAIL_PASSWORD: ${SMTP_PASS:-}
+      MAIL_FROM_ADDRESS: ${SMTP_ADMIN_EMAIL:-noreply@swor.fr}
+      MAIL_FROM_NAME: Swor
+    volumes:
+      - swor-api-storage:/var/www/html/storage/app
+    depends_on:
+      db:
+        condition: service_healthy
+
   front:
     container_name: swor-front
     build:
       context: .
       dockerfile: front/Dockerfile.prod
       args:
-        NEXT_PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${ANON_KEY}
+        NEXT_PUBLIC_API_URL: ${API_URL:-https://api.swor.fr}
     restart: unless-stopped
     ports:
       - "127.0.0.1:3000:3000"
     environment:
       - NODE_ENV=production
     depends_on:
-      - kong
+      - api
+
+volumes:
+  swor-db-data:
+  swor-api-storage:

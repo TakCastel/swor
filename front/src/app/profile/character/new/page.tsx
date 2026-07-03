@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Shield, Award, ArrowLeft, Save, Loader2, AlertCircle, Users, BookOpen, Heart, Zap, Crosshair, Sparkles, Ghost, Briefcase, ChevronRight, ChevronLeft } from 'lucide-react';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, apiMutate, fetchCurrentUser } from '@/shared/utils/api';
 import { useActiveCharacter } from '@/shared/contexts/CharacterContext';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
@@ -111,17 +111,21 @@ export default function NewCharacterPage() {
 
   async function checkCharacterLimitAndFetchGroups() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await fetchCurrentUser();
       if (!user) {
         router.push('/auth/login');
         return;
       }
 
-      const { count: charCount } = await supabase.from('characters').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
-      if (charCount !== null && charCount >= 6) { router.push('/profile'); return; }
-      setCount(charCount || 0);
+      const [characters, groups] = await Promise.all([
+        apiFetch<any[]>(`/profiles/${user.id}/characters`),
+        apiFetch<any[]>(`/groups?era=${encodeURIComponent(formData.era)}`),
+      ]);
 
-      const { data: groups } = await supabase.from('groups').select('*').eq('era', formData.era).order('name');
+      const charCount = characters.length;
+      if (charCount >= 6) { router.push('/profile'); return; }
+      setCount(charCount);
+
       setAvailableGroups(groups || []);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   }
@@ -142,16 +146,13 @@ export default function NewCharacterPage() {
     setError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { data: character, error: charError } = await supabase.from('characters').insert({
-        user_id: user?.id,
+      // L'API crée le personnage, l'adhésion à la faction et l'active sur le profil
+      await apiMutate('/characters', 'POST', {
         name: formData.name,
         species: formData.species,
         class: formData.job,
         occupation_category: formData.category,
         era: formData.era,
-        faction: availableGroups.find(g => g.id === formData.selectedGroupId)?.name || 'Indépendant',
         main_group_id: formData.selectedGroupId || null,
         physical_description: formData.physical_description,
         personality: formData.personality,
@@ -160,37 +161,10 @@ export default function NewCharacterPage() {
         dislikes: formData.dislikes,
         skills: formData.selectedSkills,
         starting_item: currentJob?.item,
-        credits: 2000,
-      }).select().single();
+      });
 
-      if (charError) throw charError;
-
-      // 1. Définir le personnage comme actif pour le profil
-      if (character && user) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ active_character_id: character.id })
-          .eq('id', user.id);
-        
-        if (updateError) {
-          console.error("Erreur lors de l'activation du personnage:", updateError);
-        }
-        
-        // Petit délai pour laisser la DB respirer (surtout en local)
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Forcer le rafraîchissement du contexte global
-        await refreshActiveCharacter();
-      }
-
-      // 2. Gérer l'adhésion à la faction
-      if (formData.selectedGroupId && character) {
-        await supabase.from('group_members').insert({
-          group_id: formData.selectedGroupId,
-          character_id: character.id,
-          role: 'member'
-        });
-      }
+      // Rafraîchir le contexte global (personnage actif)
+      await refreshActiveCharacter();
 
       // Rediriger vers le forum plutôt que le profil pour une immersion immédiate
       router.push('/forum');
