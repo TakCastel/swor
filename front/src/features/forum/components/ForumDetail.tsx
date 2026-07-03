@@ -9,7 +9,7 @@ import { Card, CardTitle, CardDescription } from '@/shared/components/ui/Card';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
 import { TopicRow } from '@/shared/components/forum/TopicRow';
 import { ForumRow } from '@/shared/components/forum/ForumRow';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, ApiError } from '@/shared/utils/api';
 import { useActiveCharacter } from '@/shared/contexts/CharacterContext';
 import { cn } from '@/shared/utils/cn';
 import TopicForm from './TopicForm';
@@ -37,63 +37,31 @@ export default function ForumDetail({ forumId }: ForumDetailProps) {
   async function fetchForumData() {
     setLoading(true);
     try {
-      const { data: forumData, error: forumError } = await supabase
-        .from('forums')
-        .select(`
-          *,
-          category:forum_categories(id, name, era)
-        `)
-        .eq('id', forumId)
-        .single();
+      const { forum: forumData, ancestors, topics: topicsData } = await apiFetch<{
+        forum: any;
+        ancestors: { id: number; name: string }[];
+        topics: any[];
+      }>(`/forums/${forumId}`);
 
-      if (forumError) throw forumError;
       setForum(forumData);
       setIsRP(!!forumData.category?.era);
 
       const path: BreadcrumbSegment[] = [];
       if (forumData.category) {
-        path.push({ 
+        path.push({
           name: forumData.category.name,
-          href: forumData.category.era ? `/forum/era/${forumData.category.id}` : undefined 
+          href: forumData.category.era ? `/forum/era/${forumData.category.id}` : undefined
         });
       }
 
-      let currentParentId = forumData.parent_id;
-      const parents = [];
-      while (currentParentId) {
-        const { data: parent } = await supabase.from('forums').select('id, name, parent_id').eq('id', currentParentId).single();
-        if (parent) {
-          parents.unshift({ name: parent.name, href: `/forum/${parent.id}` });
-          currentParentId = parent.parent_id;
-        } else break;
-      }
+      // Les ancêtres arrivent du plus proche à la racine : on remet la racine en premier.
+      const parents = [...(ancestors || [])]
+        .reverse()
+        .map(parent => ({ name: parent.name, href: `/forum/${parent.id}` }));
       setBreadcrumbs([...path, ...parents, { name: forumData.name }]);
 
-      // 2. Récupérer les sous-forums avec les infos du dernier message agrégé
-      const { data: subForums, error: subsError } = await supabase
-        .from('forums')
-        .select(`
-          *,
-          last_post:last_post_id (
-            id,
-            created_at,
-            topic:topics (id, title),
-            author:profiles (username),
-            character:characters (
-              name,
-              main_group:groups (color)
-            )
-          )
-        `)
-        .eq('parent_id', forumId)
-        .order('display_order', { ascending: true });
-
-      if (subsError) console.error('Erreur subForums détaillée:', JSON.stringify(subsError, null, 2));
-
-      if (subsError) console.error('Erreur subForums:', subsError);
-
       // Transformer les sous-forums pour inclure lastPost
-      const formattedSubForums = (subForums || []).map(sub => {
+      const formattedSubForums = (forumData.children || []).map((sub: any) => {
         const lp = sub.last_post;
         let lastPost = null;
 
@@ -122,49 +90,26 @@ export default function ForumDetail({ forumId }: ForumDetailProps) {
         };
       });
 
-      setForum((prev: any) => ({ ...prev, sub_forums: formattedSubForums }));
-
-      const { data: topicsData, error: topicsError } = await supabase
-        .from('topics')
-        .select(`
-          *,
-          author:profiles(username, avatar_url),
-          character:characters(name, avatar, main_group:groups(name, color)),
-          posts (
-            id,
-            created_at,
-            author:profiles(username),
-            character:characters(name, main_group:groups(color))
-          )
-        `)
-        .eq('forum_id', forumId)
-        .order('is_pinned', { ascending: false })
-        .order('updated_at', { ascending: false });
-
-      if (topicsError) throw topicsError;
+      setForum({ ...forumData, sub_forums: formattedSubForums });
 
       // Formatter les sujets pour inclure les infos du dernier message réel
-      const formattedTopics = (topicsData || []).map(topic => {
-        // Trier les messages par date de création décroissante et prendre le premier
-        const sortedPosts = [...(topic.posts || [])].sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        const lastPostData = sortedPosts.length > 0 ? sortedPosts[0] : null;
-        
+      const formattedTopics = (topicsData || []).map((topic: any) => {
+        const lastPostData = topic.last_post || null;
+
         const lastPost = {
           id: lastPostData?.id,
-          authorName: lastPostData 
+          authorName: lastPostData
             ? (lastPostData.character?.name || lastPostData.author?.username || 'Anonyme')
             : (topic.character?.name || topic.author?.username || 'Anonyme'),
           authorColor: lastPostData
             ? lastPostData.character?.main_group?.color
             : topic.character?.main_group?.color,
-          date: new Date(topic.updated_at).toLocaleDateString('fr-FR', { 
-            day: '2-digit', 
-            month: 'short', 
-            year: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit' 
+          date: new Date(topic.updated_at).toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
           })
         };
 
@@ -174,9 +119,8 @@ export default function ForumDetail({ forumId }: ForumDetailProps) {
       setTopics(formattedTopics);
 
     } catch (err: any) {
-      const errorMsg = `ERREUR_FORUM -> MSG: ${err.message || 'n/a'} | CODE: ${err.code || 'n/a'} | DET: ${err.details || 'n/a'}`;
-      console.error(errorMsg);
-      if (err.code === 'PGRST116') router.push('/forum');
+      console.error('Erreur chargement forum:', err);
+      if (err instanceof ApiError) router.push('/forum');
     } finally {
       setLoading(false);
     }

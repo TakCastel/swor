@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Users, Calendar, MessageSquare, Shield, ArrowUpDown } from 'lucide-react';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch } from '@/shared/utils/api';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
 import { Avatar } from '@/shared/components/ui/Avatar';
 import { Badge } from '@/shared/components/ui/Badge';
@@ -28,33 +28,12 @@ export default function FactionDetail({ id }: FactionDetailProps) {
 
   async function fetchFactionData() {
     try {
-      // Fetch faction info
-      const { data: group, error: groupError } = await supabase
-        .from('groups')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (groupError) throw groupError;
+      const group = await apiFetch<any>(`/groups/${id}`);
       setFaction(group);
 
-      // Fetch members with post count
-      // Note: We'll do a join to get post counts if possible, 
-      // otherwise we fetch and count in JS for now if the DB query is complex.
-      // Better: Use a join or subquery.
-      const { data: chars, error: charsError } = await supabase
-        .from('characters')
-        .select(`
-          *,
-          posts:posts(count)
-        `)
-        .eq('main_group_id', id);
-
-      if (charsError) throw charsError;
-
-      const membersWithStats = (chars || []).map((char: any) => ({
+      const membersWithStats = (group.characters || []).map((char: any) => ({
         ...char,
-        posts_count: char.posts?.[0]?.count || 0
+        posts_count: char.posts_count || 0
       }));
 
       // Sorting

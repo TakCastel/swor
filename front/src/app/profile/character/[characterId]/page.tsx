@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, fetchCurrentUser } from '@/shared/utils/api';
 import { Card, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/Card';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
@@ -28,22 +28,12 @@ export default function CharacterSummaryPage() {
   }, [characterId]);
 
   async function fetchUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUser(user);
+    setCurrentUser(await fetchCurrentUser());
   }
 
   async function fetchCharacter() {
     try {
-      const { data, error } = await supabase
-        .from('characters')
-        .select(`
-          *,
-          main_group:groups(*)
-        `)
-        .eq('id', characterId)
-        .single();
-
-      if (error) throw error;
+      const data = await apiFetch<any>(`/characters/${characterId}`);
       setCharacter(data);
     } catch (err: any) {
       console.error('Erreur lors du chargement du personnage:', err);

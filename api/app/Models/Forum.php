@@ -23,6 +23,7 @@ class Forum extends Model
         'display_order',
         'topics_count',
         'posts_count',
+        'last_post_id',
     ];
 
     protected function casts(): array
@@ -57,5 +58,28 @@ class Forum extends Model
     public function charactersHere(): HasMany
     {
         return $this->hasMany(Character::class, 'current_location_id');
+    }
+
+    public function lastPost(): BelongsTo
+    {
+        return $this->belongsTo(Post::class, 'last_post_id');
+    }
+
+    /**
+     * Remonte la chaîne des parents (du plus proche à la racine).
+     *
+     * @return array<int, Forum>
+     */
+    public function ancestors(): array
+    {
+        $ancestors = [];
+        $current = $this->parent;
+
+        while ($current !== null) {
+            $ancestors[] = $current;
+            $current = $current->parent;
+        }
+
+        return $ancestors;
     }
 }

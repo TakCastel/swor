@@ -18,6 +18,7 @@ class Profile extends Model
         'username',
         'avatar_url',
         'title_hrp',
+        'bio_hrp',
         'role',
         'active_character_id',
         'last_seen',

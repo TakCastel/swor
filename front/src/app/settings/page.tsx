@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Save, Loader2, AlertCircle, CheckCircle2, Camera, ArrowLeft, Trash2 } from 'lucide-react';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, apiMutate, fetchCurrentUser } from '@/shared/utils/api';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/shared/components/ui/Card';
@@ -25,20 +25,14 @@ export default function SettingsPage() {
 
   async function fetchProfile() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await fetchCurrentUser();
       if (!user) {
         router.push('/auth/login');
         return;
       }
       setUser(user);
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) throw profileError;
+      const profile = await apiFetch<any>('/me');
       setUsername(profile.username || '');
       setAvatarUrl(profile.avatar_url || '');
       setBioHrp(profile.bio_hrp || '');
@@ -56,17 +50,11 @@ export default function SettingsPage() {
     setSuccess(false);
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          username,
-          avatar_url: avatarUrl,
-          bio_hrp: bioHrp,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user?.id);
-
-      if (error) throw error;
+      await apiMutate('/me/profile', 'PATCH', {
+        username,
+        avatar_url: avatarUrl,
+        bio_hrp: bioHrp,
+      });
       setSuccess(true);
     } catch (err: any) {
       setError(err.message);

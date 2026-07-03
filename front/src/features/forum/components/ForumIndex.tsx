@@ -10,7 +10,7 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
 import { ForumRow } from '@/shared/components/forum/ForumRow';
 import { useActiveCharacter } from '@/shared/contexts/CharacterContext';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch } from '@/shared/utils/api';
 
 export default function ForumIndex() {
   const { activeCharacter, userRole, loading: loadingChar } = useActiveCharacter();
@@ -37,31 +37,10 @@ export default function ForumIndex() {
   async function fetchForumData() {
     setLoading(true);
     try {
-      const { data: categoriesData } = await supabase.from('forum_categories').select('*').order('display_order', { ascending: true });
-      
-      // On récupère les forums avec les infos agrégées récursivement
-      const { data: forumsData, error: forumsError } = await supabase
-        .from('forums')
-        .select(`
-          *,
-          last_post:last_post_id (
-            id,
-            created_at,
-            topic:topics (id, title),
-            author:profiles (username),
-            character:characters (
-              name,
-              main_group:groups (color)
-            )
-          )
-        `)
-        .order('display_order', { ascending: true });
-
-      if (forumsError) {
-        console.error('Erreur forumsData détaillée:', JSON.stringify(forumsError, null, 2));
-      }
-      
-      console.log('Nombre de forums récupérés:', forumsData?.length);
+      const [categoriesData, forumsData] = await Promise.all([
+        apiFetch<any[]>('/forum/categories'),
+        apiFetch<any[]>('/forums'),
+      ]);
 
       const filteredCats = (categoriesData || []).filter(cat => {
         if (!hasAccess(cat.required_role, userRole)) return false;

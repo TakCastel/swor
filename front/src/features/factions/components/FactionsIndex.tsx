@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Shield, Users, ArrowRight } from 'lucide-react';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch } from '@/shared/utils/api';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
 import { Card } from '@/shared/components/ui/Card';
 import { Group } from '@/features/profile/types';
@@ -27,22 +27,14 @@ export default function FactionsIndex() {
 
   async function fetchFactions() {
     try {
-      const { data: groups, error } = await supabase
-        .from('groups')
-        .select(`
-          *,
-          characters:characters(count)
-        `)
-        .order('name');
-
-      if (error) throw error;
+      const groups = await apiFetch<any[]>('/groups');
 
       const grouped = (groups || []).reduce((acc: any, group: any) => {
         const era = group.era || 'Général';
         if (!acc[era]) acc[era] = [];
         acc[era].push({
           ...group,
-          member_count: group.characters?.[0]?.count || 0
+          member_count: group.characters_count || 0
         });
         return acc;
       }, {});

@@ -2,8 +2,8 @@
 
 Documentation métier du schéma Postgres. Complète le DDL SQL (source technique) par les règles, relations et choix de conception.
 
-**Source canonique SQL :** `docker/supabase/volumes/db/init/01_core_schema.sql`  
-**Seeds de contenu :** `supabase/seeds/` et `docker/supabase/volumes/db/init/`
+**Source canonique :** `api/database/migrations/` (migrations Laravel)  
+**Seeds de contenu :** `api/database/seeders/`
 
 ## Vue d'ensemble
 

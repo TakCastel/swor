@@ -12,8 +12,8 @@ rsync -avz --delete \
   --exclude .git \
   --exclude '*.local' \
   --exclude .env \
-  --exclude docker/supabase/volumes/db/data \
-  --exclude docker/supabase/volumes/storage \
+  --exclude api/vendor \
+  --exclude api/storage/logs \
   "$ROOT/" "$REMOTE:$DEST/"
 
 echo "→ Build et redémarrage Docker (production)"

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, apiMutate } from '@/shared/utils/api';
 
 interface Character {
   id: string;
@@ -13,6 +13,12 @@ interface Character {
 }
 
 type UserRole = 'user' | 'moderator' | 'admin' | 'game_master';
+
+interface MeResponse {
+  id: string;
+  role: UserRole;
+  active_character: Character | null;
+}
 
 interface CharacterContextType {
   activeCharacter: Character | null;
@@ -31,84 +37,30 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refreshActiveCharacter();
-
-    // Écouter les changements d'authentification pour rafraîchir le perso
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        refreshActiveCharacter();
-      } else if (event === 'SIGNED_OUT') {
-        setActiveCharacterState(null);
-        setUserRole(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   async function refreshActiveCharacter() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setActiveCharacterState(null);
-        setUserRole(null);
-        setLoading(false);
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('active_character_id, role')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profile?.role) {
-        setUserRole(profile.role);
-      }
-
-      if (profile?.active_character_id) {
-        const { data: character } = await supabase
-          .from('characters')
-          .select('id, name, avatar, era, faction, credits')
-          .eq('id', profile.active_character_id)
-          .maybeSingle();
-        
-        setActiveCharacterState(character || null);
-      } else {
-        setActiveCharacterState(null);
-      }
-    } catch (err) {
-      console.error('[CharacterContext] Erreur:', err);
+      const me = await apiFetch<MeResponse>('/me');
+      setUserRole(me.role ?? null);
+      setActiveCharacterState(me.active_character ?? null);
+    } catch {
+      // Non connecté (401) : pas de personnage actif.
+      setActiveCharacterState(null);
+      setUserRole(null);
     } finally {
       setLoading(false);
     }
   }
 
   async function setActiveCharacter(characterId: string | null) {
+    setLoading(true);
     try {
-      console.log("Tentative de changement de personnage vers:", characterId);
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Utilisateur non identifié');
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ active_character_id: characterId })
-        .eq('id', user.id)
-        .select();
-
-      if (error) {
-        console.error("Erreur lors de l'update du profil:", error);
-        throw error;
-      }
-
-      console.log("Profil mis à jour avec succès:", data);
-      
-      // On force le rafraîchissement immédiat
-      await refreshActiveCharacter();
-    } catch (err) {
-      console.error('Erreur fatale setActiveCharacter:', err);
-      throw err;
+      const me = await apiMutate<MeResponse>('/me/active-character', 'PUT', {
+        character_id: characterId,
+      });
+      setUserRole(me.role ?? null);
+      setActiveCharacterState(me.active_character ?? null);
     } finally {
       setLoading(false);
     }
@@ -128,4 +80,3 @@ export function useActiveCharacter() {
   }
   return context;
 }
-
