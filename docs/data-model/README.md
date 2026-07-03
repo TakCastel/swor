@@ -60,18 +60,12 @@ erDiagram
 | `ship_module_type` | `engine`, `shield`, `weapon`, `utility` | Modules vaisseau |
 | `ship_module_status` | `active`, `damaged`, `offline` | Modules vaisseau |
 
-## Écarts entre les deux schémas SQL
-
-Le fichier Supabase (`supabase/migrations/`) est une version antérieure. Pour Laravel, on retient le schéma Docker :
-
-| Élément | `supabase/migrations/` | Docker (canonique) |
-|---------|------------------------|---------------------|
-| `group_members` | Absent | Présent |
-| `characters` champs RP | `hrp_notes` seulement | + `physical_description`, `personality`, `skills[]`, etc. |
-| `groups.era` | Absent | Présent |
-| `profiles` | `avatar_url` | + `title_hrp`, `last_seen` |
-| Compteurs forum | Direct (1 niveau) | Récursif (`parent_id`) |
-| RPC | Absent | `get_global_stats`, `increment_topic_views` |
+> **Note historique.** Avant la migration Laravel (#41), deux schémas SQL
+> coexistaient (migrations Supabase CLI vs bootstrap Docker) ; le schéma Docker,
+> plus complet (`group_members`, champs RP des personnages, `groups.era`,
+> compteurs forum récursifs, RPC stats/vues), a servi de référence pour les
+> migrations Laravel. Ces fichiers SQL ont été supprimés du repo — l'historique
+> git et l'[ADR 0001](../adr/0001-migration-laravel.md) en gardent la trace.
 
 ## Contenu hors base
 
