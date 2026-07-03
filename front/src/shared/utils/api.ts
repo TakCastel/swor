@@ -37,7 +37,7 @@ export async function apiFetch<T>(
     headers.set('Accept', 'application/json');
   }
 
-  if (options.body && !headers.has('Content-Type')) {
+  if (typeof options.body === 'string' && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -69,6 +69,33 @@ export async function apiFetch<T>(
   }
 
   return data as T;
+}
+
+/**
+ * Requête mutante (POST/PATCH/PUT/DELETE) : garantit le cookie CSRF Sanctum.
+ */
+export async function apiMutate<T>(
+  path: string,
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  payload?: unknown,
+): Promise<T> {
+  await ensureCsrfCookie();
+  return apiFetch<T>(path, {
+    method,
+    body: payload !== undefined ? JSON.stringify(payload) : undefined,
+  });
+}
+
+/**
+ * Upload d'un fichier image (multipart) vers l'API. Réservé aux admins.
+ */
+export async function uploadFile(file: File, folder: string): Promise<{ url: string }> {
+  await ensureCsrfCookie();
+  const body = new FormData();
+  body.append('file', file);
+  body.append('folder', folder);
+
+  return apiFetch<{ url: string }>('/uploads', { method: 'POST', body });
 }
 
 export async function registerUser(payload: {

@@ -7,22 +7,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "tsc --noEmit",
-    "simulate": "tsx scripts/simulate-interactions.ts",
-    "simulate:watch": "tsx scripts/start-simulation.ts"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.39.0",
     "@tailwindcss/postcss": "latest",
-    "axios": "^1.13.2",
-    "cheerio": "^1.1.2",
     "clsx": "latest",
-    "dotenv": "^17.2.3",
     "lucide-react": "latest",
     "next": "latest",
-    "openai": "^6.15.0",
     "react": "latest",
     "react-dom": "latest",
     "react-markdown": "^10.1.0",
@@ -36,7 +27,6 @@
     "@types/react-dom": "latest",
     "autoprefixer": "latest",
     "postcss": "latest",
-    "tsx": "^4.19.2",
     "typescript": "~5.8.2"
   }
 }

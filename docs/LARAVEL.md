@@ -2,13 +2,13 @@
 
 Backend Laravel dans **`api/`**. Le front joueur est dans **`front/`** (Next.js).
 
-Voir [adr/0002-frontend-api-separes.md](adr/0002-frontend-api-separes.md) pour l’architecture cible.
+Voir [adr/0002-frontend-api-separes.md](adr/0002-frontend-api-separes.md) pour l'architecture cible.
 
 ## Prérequis
 
 - PHP 8.2+ et [Composer](https://getcomposer.org/)
 - Node.js 20+ (voir `.nvmrc`)
-- PostgreSQL accessible (via `docker:supabase:up` ou instance locale)
+- Docker (pour PostgreSQL)
 
 ## Installation
 
@@ -16,9 +16,9 @@ Voir [adr/0002-frontend-api-separes.md](adr/0002-frontend-api-separes.md) pour l
 npm run setup
 ```
 
-Installe les dépendances Composer (`api/`), npm (racine + workspaces) et copie les fichiers `.env` d’exemple.
+Installe les dépendances Composer (`api/`), npm (racine + front) et copie les fichiers `.env` d'exemple.
 
-Générer la clé d’application si besoin :
+Générer la clé d'application si besoin :
 
 ```bash
 cd api && php artisan key:generate
@@ -26,19 +26,16 @@ cd api && php artisan key:generate
 
 ## Base de données
 
-Par défaut, `api/.env.example` pointe vers une base **`swor`** dédiée sur le Postgres Docker (port `54322`), **distincte** du schéma Supabase existant sur la base `postgres`.
+Postgres tourne dans Docker (base **`swor`**, port `54322`) :
 
 ```bash
-# Créer la base (via Docker Supabase)
-docker compose -f docker/supabase/docker-compose.yml exec db psql -U postgres -c "CREATE DATABASE swor;"
-
-npm run docker:supabase:up
+npm run docker:up
 cd api && php artisan migrate:fresh --seed
 ```
 
-## Lancer l’API
+## Lancer l'API
 
-Terminal unique (serveur PHP + queue + logs + Vite Inertia legacy) :
+Terminal unique (serveur PHP + queue + logs) :
 
 ```bash
 npm run dev:api
@@ -60,6 +57,23 @@ Endpoints : `http://localhost:8000/api/v1/...`
 - Variables `api/.env` : `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, `SESSION_DOMAIN`
 - Front : `NEXT_PUBLIC_API_URL=http://localhost:8000` dans `front/.env.local`
 
+### API de jeu
+
+Le front consomme exclusivement l'API Laravel (`front/src/shared/utils/api.ts`) :
+
+| Domaine | Endpoints principaux |
+|---------|----------------------|
+| Forum | `GET /forum/categories`, `GET /forums`, `GET /forums/{id}`, `GET /topics/{id}`, `POST /forums/{id}/topics`, `POST /topics/{id}/posts`, `POST /topics/{id}/views` |
+| Portail / stats | `GET /stats`, `GET /portal`, `GET /staff`, `GET /online-users` |
+| Profils | `GET /profiles/{id}`, `GET /profiles/{id}/characters`, `GET /me`, `PATCH /me/profile`, `PUT /me/active-character`, `POST /me/heartbeat` |
+| Personnages | `GET/POST/PATCH /characters…`, `/inventory`, `/ship`, `/economy` |
+| Factions | `GET /groups`, `GET /groups/{id}` |
+| Admin | `POST/PATCH/DELETE /forums…`, `POST /uploads` (gate `admin`) |
+
+Les compteurs de forums (`topics_count`, `posts_count`, `last_post_id`) sont
+agrégés récursivement sur les ancêtres à chaque nouveau message
+(`App\Services\ForumActivity`).
+
 ## Lancer le front joueur
 
 Dans un second terminal :
@@ -67,8 +81,6 @@ Dans un second terminal :
 ```bash
 npm run dev:front    # front/ sur :3000
 ```
-
-Le front consomme l’API Laravel (Sanctum) pour l’authentification (#32). Les autres domaines (forum, profil…) restent sur Supabase jusqu’aux issues suivantes.
 
 ## Back-office
 
@@ -78,8 +90,8 @@ Filament arrive en #39 sur `/admin` (même app Laravel dans `api/`).
 
 ```bash
 cd api && ./vendor/bin/pint          # Format PHP
-cd api && php artisan test           # PHPUnit / Pest
-npm run lint                         # ESLint (front/)
+cd api && php artisan test           # PHPUnit
+npm run lint                         # TypeScript (front/)
 ```
 
 ## Structure
@@ -87,26 +99,18 @@ npm run lint                         # ESLint (front/)
 ```
 api/
 ├── app/
-│   ├── Http/Controllers/Api/
+│   ├── Http/Controllers/Api/V1/   # Auth, Forum, Characters, Groups, Stats…
 │   ├── Models/
-│   └── Policies/
+│   └── Services/
 ├── routes/
 │   ├── api.php         # JSON pour front/
-│   └── web.php         # Filament, healthcheck
+│   └── web.php         # Redirection racine, vérification email
 ├── database/
-├── public/
+│   ├── migrations/     # Schéma canonique
+│   └── seeders/        # Données de démo (catégories, atlas, forums HRP)
 └── composer.json
 
 front/                  # Next.js — front joueur
-```
-
-## Legacy (dans api/)
-
-- **`api/resources/js/`** — squelette Inertia (#30), provisoire ; retiré en #41
-- **`back/`** — back-office Next.js, remplacé par Filament (#39)
-
-```bash
-npm run dev:back     # back/ sur :3001 (legacy)
 ```
 
 Voir [WORKFLOW.md](WORKFLOW.md), [adr/0001-migration-laravel.md](adr/0001-migration-laravel.md) et [adr/0002-frontend-api-separes.md](adr/0002-frontend-api-separes.md).

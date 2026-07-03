@@ -12,7 +12,7 @@ import {
   TrendingUp,
   Gamepad2
 } from 'lucide-react';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch } from '@/shared/utils/api';
 import { Button } from '@/shared/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/shared/components/ui/Card';
 import { Badge } from '@/shared/components/ui/Badge';
@@ -359,86 +359,32 @@ export default function PortalContent() {
 
   async function fetchPortalData() {
     try {
-      // 1. Fetch Stats
-      const { data: globalStats } = await supabase.rpc('get_global_stats');
-      const { count: onlineCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gt('last_seen', new Date(Date.now() - 15 * 60000).toISOString());
+      const [globalStats, portal, staffMembers] = await Promise.all([
+        apiFetch<any>('/stats'),
+        apiFetch<any>('/portal'),
+        apiFetch<any[]>('/staff'),
+      ]);
 
-      setStats({
-        ...globalStats,
-        online_count: onlineCount || 0
-      });
+      setStats(globalStats);
 
-      // 2. Fetch Latest Topics
-      const { data: topics } = await supabase
-        .from('topics')
-        .select(`
-          id,
-          title,
-          created_at,
-          author:profiles(username),
-          forum:forums(category:forum_categories(era))
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      setLatestTopics((portal.latest_topics || []).map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        author_name: t.author?.username || 'Inconnu',
+        era: t.forum?.category?.era || '',
+        created_at: t.created_at
+      })));
 
-      if (topics) {
-        setLatestTopics(topics.map((t: any) => ({
-          id: t.id,
-          title: t.title,
-          author_name: t.author?.username || 'Inconnu',
-          era: t.forum?.category?.era || '',
-          created_at: t.created_at
-        })));
-      }
+      setNews((portal.news || []).map((n: any) => ({
+        id: n.id,
+        title: n.title,
+        content: n.posts?.[0]?.content || '',
+        created_at: n.created_at,
+        author_name: n.author?.username || 'Inconnu'
+      })));
+      setNewsForumId(portal.news_forum_id || null);
 
-      // 3. Fetch News (Topics from 'Annonces' forum)
-      const { data: newsItems } = await supabase
-        .from('topics')
-        .select(`
-          id,
-          title,
-          created_at,
-          author:profiles(username),
-          first_post:posts(content),
-          forum:forums!inner(id, name)
-        `)
-        .eq('forum.name', 'Annonces')
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (newsItems && newsItems.length > 0) {
-        setNews(newsItems.map((n: any) => ({
-          id: n.id,
-          title: n.title,
-          content: n.first_post?.[0]?.content || '',
-          created_at: n.created_at,
-          author_name: n.author?.username || 'Inconnu'
-        })));
-        const forum = newsItems[0].forum as { id: number } | { id: number }[] | null;
-        setNewsForumId((Array.isArray(forum) ? forum[0]?.id : forum?.id) || 1);
-      } else {
-        // Fallback: essayer de trouver le forum 'Annonces' même s'il est vide
-        const { data: forumData } = await supabase
-          .from('forums')
-          .select('id')
-          .eq('name', 'Annonces')
-          .single();
-        if (forumData) setNewsForumId(forumData.id);
-      }
-
-      // 4. Fetch Staff
-      const { data: staffMembers } = await supabase
-        .from('profiles')
-        .select('username, role, avatar_url')
-        .in('role', ['admin', 'moderator', 'game_master'])
-        .order('role');
-
-      if (staffMembers) {
-        setStaff(staffMembers);
-      }
+      setStaff(staffMembers || []);
 
     } catch (err) {
       console.error('Error fetching portal data:', err);

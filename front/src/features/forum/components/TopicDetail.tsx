@@ -7,7 +7,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { Card, CardTitle } from '@/shared/components/ui/Card';
 import { Badge } from '@/shared/components/ui/Badge';
 import { PostView } from '@/shared/components/forum/PostView';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, apiMutate } from '@/shared/utils/api';
 import { cn } from '@/shared/utils/cn';
 import ReplyForm from './ReplyForm';
 import Breadcrumbs, { BreadcrumbSegment } from './Breadcrumbs';
@@ -30,85 +30,40 @@ export default function TopicDetail({ topicId }: TopicDetailProps) {
   async function fetchTopicData() {
     setLoading(true);
     try {
-      // 1. Fetch topic info with forum and category
-      const { data: topicData, error: topicError } = await supabase
-        .from('topics')
-        .select(`
-          *,
-          forum:forums(id, name, parent_id, category:forum_categories(id, name, era))
-        `)
-        .eq('id', topicId)
-        .single();
+      const { topic: topicData, ancestors } = await apiFetch<{
+        topic: any;
+        ancestors: { id: number; name: string }[];
+      }>(`/topics/${topicId}`);
 
-      if (topicError) throw topicError;
       setTopic(topicData);
+      setPosts(topicData.posts || []);
 
-      // 2. Build Breadcrumbs
+      // Breadcrumbs : catégorie, puis ancêtres (racine en premier), puis forum et sujet
       const path: BreadcrumbSegment[] = [];
       const forumData = topicData.forum;
 
       if (forumData) {
-        // Add category
         if (forumData.category) {
           path.push({ name: forumData.category.name });
         }
 
-        // Fetch parents recursively
-        let currentParentId = forumData.parent_id;
-        const parents = [];
-        
-        while (currentParentId) {
-          const { data: parent } = await supabase
-            .from('forums')
-            .select('id, name, parent_id')
-            .eq('id', currentParentId)
-            .single();
-          
-          if (parent) {
-            parents.unshift({
-              name: parent.name,
-              href: `/forum/${parent.id}`
-            });
-            currentParentId = parent.parent_id;
-          } else {
-            currentParentId = null;
-          }
-        }
-        
+        const parents = [...(ancestors || [])]
+          .reverse()
+          .map(parent => ({ name: parent.name, href: `/forum/${parent.id}` }));
+
         setBreadcrumbs([
-          ...path, 
-          ...parents, 
+          ...path,
+          ...parents,
           { name: forumData.name, href: `/forum/${forumData.id}` },
           { name: topicData.title }
         ]);
       }
 
-      // 3. Fetch posts
-      const { data: postsData, error: postsError } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          author:profiles(username, avatar_url, role, title_hrp),
-          character:characters(
-            name, 
-            avatar, 
-            class, 
-            main_group:groups(name, color)
-          )
-        `)
-        .eq('topic_id', topicId)
-        .order('created_at', { ascending: true });
-
-      if (postsError) throw postsError;
-      setPosts(postsData || []);
-
-      // 4. Increment views
-      await supabase.rpc('increment_topic_views', { topic_id: topicId });
+      // Incrémenter le compteur de vues (sans bloquer l'affichage)
+      apiMutate(`/topics/${topicId}/views`, 'POST').catch(() => {});
 
     } catch (err: any) {
-      console.error('--- ERREUR FETCH TOPIC ---');
-      console.error('MESSAGE: ' + (err.message || 'n/a'));
-      console.error('CODE: ' + (err.code || 'n/a'));
+      console.error('Erreur chargement sujet:', err);
     } finally {
       setLoading(false);
     }

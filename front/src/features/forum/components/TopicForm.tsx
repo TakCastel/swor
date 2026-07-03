@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { supabase } from '@/shared/utils/supabase';
+import { apiMutate } from '@/shared/utils/api';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Card } from '@/shared/components/ui/Card';
@@ -28,34 +28,11 @@ export default function TopicForm({ forumId, isRP, onSuccess, onCancel }: TopicF
     
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non connecté');
-
-      // 1. Créer le sujet
-      const { data: topic, error: topicError } = await supabase
-        .from('topics')
-        .insert({
-          forum_id: forumId,
-          author_id: user.id,
-          character_id: isRP ? activeCharacter?.id : null,
-          title: title.trim()
-        })
-        .select()
-        .single();
-
-      if (topicError) throw topicError;
-
-      // 2. Créer le premier message (post)
-      const { error: postError } = await supabase
-        .from('posts')
-        .insert({
-          topic_id: topic.id,
-          author_id: user.id,
-          character_id: isRP ? activeCharacter?.id : null,
-          content: content.trim()
-        });
-
-      if (postError) throw postError;
+      await apiMutate(`/forums/${forumId}/topics`, 'POST', {
+        title: title.trim(),
+        content: content.trim(),
+        character_id: isRP ? activeCharacter?.id : null,
+      });
 
       onSuccess();
     } catch (err: any) {

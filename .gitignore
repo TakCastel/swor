@@ -33,10 +33,6 @@ next-env.d.ts
 .env.local
 .env*.local
 
-# Docker local volumes (Postgres data, storage)
-docker/supabase/volumes/db/data/
-docker/supabase/volumes/storage/
-
 # TypeScript
 *.tsbuildinfo
 
@@ -52,8 +48,7 @@ api/storage/*.key
 api/database/database.sqlite
 api/bootstrap/cache/*.php
 api/.env
-api/node_modules/
-api/.phpunit.result.cache
+.phpunit.result.cache
 /auth.json
 Homestead.json
 Homestead.yaml

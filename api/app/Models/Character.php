@@ -23,6 +23,8 @@ class Character extends Model
         'occupation_category',
         'avatar',
         'credits',
+        'monthly_income',
+        'monthly_expenses',
         'main_group_id',
         'current_location_id',
         'is_traveling',

@@ -15,7 +15,7 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { SectionHeader } from '@/shared/components/ui/SectionHeader';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
 import { Modal } from '@/shared/components/ui/Modal';
-import { supabase } from '@/shared/utils/supabase';
+import { apiFetch, apiMutate, uploadFile } from '@/shared/utils/api';
 import { useActiveCharacter } from '@/shared/contexts/CharacterContext';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/shared/utils/cn';
@@ -174,20 +174,8 @@ export default function ForumAdminPage() {
 
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
       const folder = field === 'image_url' ? 'forum-icons' : 'forum-headers';
-      const filePath = `${folder}/${fileName}`;
-
-      const { error: uploadError, data } = await supabase.storage
-        .from('forum')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('forum')
-        .getPublicUrl(filePath);
+      const { url: publicUrl } = await uploadFile(file, folder);
 
       if (isEdit) {
         setEditingForum({ ...editingForum, [field]: publicUrl });
@@ -205,8 +193,10 @@ export default function ForumAdminPage() {
   async function fetchData() {
     setLoading(true);
     try {
-      const { data: catData } = await supabase.from('forum_categories').select('*').order('display_order', { ascending: true });
-      const { data: forumData } = await supabase.from('forums').select('*').order('display_order', { ascending: true });
+      const [catData, forumData] = await Promise.all([
+        apiFetch<any[]>('/forum/categories'),
+        apiFetch<any[]>('/forums'),
+      ]);
       setCategories(catData || []);
       setForums(forumData || []);
     } catch (err) {
@@ -231,16 +221,11 @@ export default function ForumAdminPage() {
     setIsSaving(true);
     try {
       // Si targetId est null, on déplace à la racine de la catégorie
-      const { error } = await supabase
-        .from('forums')
-        .update({ 
-          parent_id: targetId,
-          category_id: catId,
-          display_order: 0 // On le met en haut par défaut lors d'un drop
-        })
-        .eq('id', sourceId);
-
-      if (error) throw error;
+      await apiMutate(`/forums/${sourceId}`, 'PATCH', {
+        parent_id: targetId,
+        category_id: catId,
+        display_order: 0, // On le met en haut par défaut lors d'un drop
+      });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -254,13 +239,12 @@ export default function ForumAdminPage() {
     if (!newForum.name || !newForum.category_id) return;
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('forums').insert([{
+      await apiMutate('/forums', 'POST', {
         ...newForum,
         category_id: parseInt(newForum.category_id),
         parent_id: newForum.parent_id ? parseInt(newForum.parent_id) : null,
         display_order: parseInt(newForum.display_order.toString())
-      }]);
-      if (error) throw error;
+      });
       setNewForum({ name: '', description: '', category_id: '', parent_id: '', type: 'location', display_order: 10, image_url: '', header_image_url: '' });
       fetchData();
     } catch (err) {
@@ -274,21 +258,16 @@ export default function ForumAdminPage() {
     if (!editingForum) return;
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('forums')
-        .update({
-          name: editingForum.name,
-          description: editingForum.description,
-          category_id: editingForum.category_id,
-          parent_id: editingForum.parent_id || null,
-          display_order: parseInt(editingForum.display_order),
-          type: editingForum.type,
-          image_url: editingForum.image_url,
-          header_image_url: editingForum.header_image_url
-        })
-        .eq('id', editingForum.id);
-
-      if (error) throw error;
+      await apiMutate(`/forums/${editingForum.id}`, 'PATCH', {
+        name: editingForum.name,
+        description: editingForum.description,
+        category_id: editingForum.category_id,
+        parent_id: editingForum.parent_id || null,
+        display_order: parseInt(editingForum.display_order),
+        type: editingForum.type,
+        image_url: editingForum.image_url,
+        header_image_url: editingForum.header_image_url
+      });
       setIsModalOpen(false);
       fetchData();
     } catch (err) {
@@ -331,8 +310,7 @@ export default function ForumAdminPage() {
 
     setIsSaving(true);
     try {
-      await supabase.from('topics').update({ forum_id: targetForumId }).in('forum_id', allForumsToAvoid);
-      await supabase.from('forums').delete().eq('id', id);
+      await apiMutate(`/forums/${id}`, 'DELETE', { move_topics_to: targetForumId });
       fetchData();
     } catch (err) {
       console.error(err);
