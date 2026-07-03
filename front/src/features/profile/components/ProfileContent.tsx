@@ -10,7 +10,8 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { Avatar } from '@/shared/components/ui/Avatar';
 import { CategoryHeader } from '@/shared/components/forum/CategoryHeader';
 import { cn } from '@/shared/utils/cn';
-import { apiFetch, fetchCurrentUser, logoutUser } from '@/shared/utils/api';
+import { apiFetch, fetchCurrentUser } from '@/shared/utils/api';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { useActiveCharacter } from '@/shared/contexts/CharacterContext';
 
 // Système de grades forum (HRP)
@@ -34,6 +35,7 @@ export default function ProfileContent({ userId }: ProfileContentProps) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [profileData, setProfileData] = useState<any>(null);
   const [characters, setCharacters] = useState<any[]>([]);
+  const { logout } = useAuth();
   const { activeCharacter, setActiveCharacter } = useActiveCharacter();
   const [switchingId, setSwitchingId] = useState<string | null>(null);
 
@@ -80,9 +82,8 @@ export default function ProfileContent({ userId }: ProfileContentProps) {
   const isOwnProfile = !userId || userId === currentUser?.id;
 
   const handleLogout = async () => {
-    await logoutUser();
-    router.push('/');
-    router.refresh();
+    await logout();
+    window.location.href = '/';
   };
 
   const handleSwitchCharacter = async (e: React.MouseEvent, charId: string) => {
