@@ -347,7 +347,7 @@ export default function Footer() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 px-4 py-2 rounded border border-white/5 bg-white/[0.01]">
               <Terminal className="w-3 h-3 text-zinc-700" />
-              <span className="text-[9px] font-mono font-bold text-zinc-700 uppercase tracking-widest">v2.0.4-PROXIMA</span>
+              <span className="text-[9px] font-mono font-bold text-zinc-700 uppercase tracking-widest">v0.2.0</span>
             </div>
           </div>
         </div>
