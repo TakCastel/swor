@@ -7,6 +7,7 @@ import Footer from "@/shared/components/Footer";
 import ChatBox from "@/features/chat/components/ChatBox";
 import { CharacterProvider } from "@/shared/contexts/CharacterContext";
 import { ToastProvider } from "@/shared/contexts/ToastContext";
+import { AuthProvider } from "@/shared/hooks/useAuth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -57,6 +58,7 @@ export default function RootLayout({
     <html lang="fr">
       <body className={`${inter.variable} ${outfit.variable} ${starWars.variable} font-sans bg-black min-h-screen text-gray-200 antialiased`}>
         <ToastProvider>
+          <AuthProvider>
           <CharacterProvider>
             <div className="min-h-screen bg-black flex flex-col">
               <Header />
@@ -69,6 +71,7 @@ export default function RootLayout({
               <ChatBox />
             </div>
           </CharacterProvider>
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>
